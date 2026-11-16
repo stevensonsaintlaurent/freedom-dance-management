@@ -1,16 +1,14 @@
-
 import { useState } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import {
   ArrowRight,
   LockKeyhole,
   UserRound,
-  GraduationCap,
-  ShieldCheck,
-  BriefcaseBusiness,
   Sparkles,
   Eye,
   EyeOff,
+  Mail,
+  Loader2,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -26,56 +24,53 @@ import { Label } from "@/components/ui/label";
 
 import { useAuth } from "../../auth/AuthContext";
 
-const roles = [
-  {
-    value: "dancer",
-    label: "Dancer",
-    icon: UserRound,
-    description: "Classes & memberships",
-  },
-  {
-    value: "instructor",
-    label: "Instructor",
-    icon: GraduationCap,
-    description: "Teaching & attendance",
-  },
-  {
-    value: "manager",
-    label: "Manager",
-    icon: BriefcaseBusiness,
-    description: "Bookings & events",
-  },
-  {
-    value: "admin",
-    label: "Admin",
-    icon: ShieldCheck,
-    description: "Full studio access",
-  },
-];
-
 export default function Login() {
-  const [role, setRole] = useState("dancer");
-  const [name, setName] = useState("Demo User");
-  const [showInfo, setShowInfo] = useState(false);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [error, setError] = useState("");
 
-  const { demoSignIn } = useAuth();
+  const { signIn } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
-  const handleLogin = (e) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
 
-    demoSignIn(role, name.trim() || "Demo User");
+    setError("");
+    setIsSubmitting(true);
 
-    const destination = location.state?.from;
-    navigate(
-      typeof destination === "string" &&
+    try {
+      const user = await signIn(email, password);
+
+      const destination = location.state?.from;
+
+      const roleRoutes = {
+        dancer: "/dashboard",
+        instructor: "/instructor/classes",
+        manager: "/manager",
+        admin: "/admin",
+      };
+
+      const fallback = roleRoutes[user.role] || "/dashboard";
+
+      const safeDestination =
+        typeof destination === "string" &&
         destination.startsWith("/") &&
-        !destination.startsWith("//")
-        ? destination
-        : "/dashboard",
-      { replace: true }
-    );
+        !destination.startsWith("//") &&
+        !destination.startsWith("/\\")
+          ? destination
+          : fallback;
+
+      navigate(safeDestination, { replace: true });
+    } catch (err) {
+      setError(
+        err.response?.data?.message || "Unable to sign in. Please try again.",
+      );
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -123,9 +118,8 @@ export default function Login() {
             </h1>
 
             <p className="max-w-sm text-base leading-7 text-zinc-400">
-              One place to manage your classes, bookings,
-              memberships, and everything happening at
-              Freedom Dance Studio.
+              One place to manage your classes, bookings, memberships, and
+              everything happening at Freedom Dance Studio.
             </p>
 
             <div className="flex items-center gap-3 text-sm text-zinc-300">
@@ -154,99 +148,104 @@ export default function Login() {
               </CardTitle>
 
               <CardDescription className="text-sm leading-6 text-zinc-400">
-                Sign in to access your Freedom Dance Studio
-                dashboard.
+                Sign in to access your Freedom Dance Studio dashboard.
               </CardDescription>
-
-              <div className="rounded-xl border border-amber-400/20 bg-amber-400/5 p-3 text-xs leading-5 text-amber-200">
-                <strong>Development preview:</strong> This page
-                uses demo access. No password is required, and
-                selecting a role does not authenticate a real user.
-              </div>
             </CardHeader>
 
             <CardContent className="px-0">
               <form onSubmit={handleLogin} className="space-y-6">
-                {/* NAME */}
+                {/* EMAIL */}
                 <div className="space-y-2">
                   <Label
-                    htmlFor="displayName"
+                    htmlFor="email"
                     className="text-sm font-medium text-zinc-200"
                   >
-                    Display Name
+                    Email Address
                   </Label>
 
                   <div className="relative">
-                    <UserRound className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-zinc-500" />
+                    <Mail className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-zinc-500" />
 
                     <Input
-                      id="displayName"
-                      value={name}
-                      onChange={(e) => setName(e.target.value)}
-                      placeholder="Enter your name"
+                      id="email"
+                      type="email"
+                      autoComplete="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder="you@example.com"
                       required
                       className="h-12 border-white/10 bg-zinc-950/70 pl-10 text-white placeholder:text-zinc-600 focus-visible:border-amber-400 focus-visible:ring-amber-400/20"
                     />
                   </div>
                 </div>
 
-                {/* ROLE SELECTION */}
-                <div className="space-y-3">
-                  <Label className="text-sm font-medium text-zinc-200">
-                    Preview Dashboard As
+                {/* PASSWORD */}
+                <div className="space-y-2">
+                  <Label
+                    htmlFor="password"
+                    className="text-sm font-medium text-zinc-200"
+                  >
+                    Password
                   </Label>
 
-                  <div className="grid grid-cols-2 gap-3">
-                    {roles.map((item) => {
-                      const Icon = item.icon;
-                      const active = role === item.value;
+                  <div className="relative">
+                    <LockKeyhole className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-zinc-500" />
 
-                      return (
-                        <button
-                          key={item.value}
-                          type="button"
-                          onClick={() => setRole(item.value)}
-                          aria-pressed={active}
-                          className={`rounded-xl border p-3 text-left transition-all duration-200 ${
-                            active
-                              ? "border-amber-400/60 bg-amber-400/10 ring-1 ring-amber-400/20"
-                              : "border-white/10 bg-zinc-950/40 hover:border-white/25 hover:bg-white/5"
-                          }`}
-                        >
-                          <Icon
-                            className={`mb-3 size-5 ${
-                              active
-                                ? "text-amber-400"
-                                : "text-zinc-500"
-                            }`}
-                          />
+                    <Input
+                      id="password"
+                      type={showPassword ? "text" : "password"}
+                      autoComplete="current-password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="Enter your password"
+                      required
+                      className="h-12 border-white/10 bg-zinc-950/70 pl-10 pr-12 text-white placeholder:text-zinc-600 focus-visible:border-amber-400 focus-visible:ring-amber-400/20"
+                    />
 
-                          <p
-                            className={`text-sm font-semibold ${
-                              active
-                                ? "text-amber-400"
-                                : "text-white"
-                            }`}
-                          >
-                            {item.label}
-                          </p>
-
-                          <p className="mt-1 text-[11px] leading-4 text-zinc-500">
-                            {item.description}
-                          </p>
-                        </button>
-                      );
-                    })}
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      aria-label={
+                        showPassword ? "Hide password" : "Show password"
+                      }
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 transition-colors hover:text-amber-400"
+                    >
+                      {showPassword ? (
+                        <EyeOff className="size-5" />
+                      ) : (
+                        <Eye className="size-5" />
+                      )}
+                    </button>
                   </div>
                 </div>
 
-                {/* DEMO BUTTON */}
+                {/* ERROR MESSAGE */}
+                {error && (
+                  <div
+                    role="alert"
+                    className="rounded-xl border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-300"
+                  >
+                    {error}
+                  </div>
+                )}
+
+                {/* LOGIN BUTTON */}
                 <Button
                   type="submit"
+                  disabled={isSubmitting}
                   className="h-12 w-full rounded-xl bg-gradient-to-r from-amber-300 to-amber-500 font-bold text-zinc-950 shadow-lg shadow-amber-500/10 transition-all hover:from-amber-200 hover:to-amber-400"
                 >
-                  Enter Demo Dashboard
-                  <ArrowRight className="ml-2 size-4" />
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 className="mr-2 size-4 animate-spin" />
+                      Signing in...
+                    </>
+                  ) : (
+                    <>
+                      Sign In
+                      <ArrowRight className="ml-2 size-4" />
+                    </>
+                  )}
                 </Button>
               </form>
 
