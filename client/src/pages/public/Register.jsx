@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useForm } from "react-hook-form";
@@ -19,6 +18,7 @@ import {
   CalendarDays,
   Heart,
   ShieldCheck,
+  Loader2,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -31,27 +31,46 @@ import {
 } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Checkbox } from "@/components/ui/checkbox";
+
+import { useAuth } from "../../auth/AuthContext";
+
+// ================= VALIDATION =================
 
 const registerSchema = z
   .object({
-    firstName: z.string().trim().min(2, "First name must have at least 2 characters"),
-    lastName: z.string().trim().min(2, "Last name must have at least 2 characters"),
+    firstName: z
+      .string()
+      .trim()
+      .min(2, "First name must have at least 2 characters")
+      .max(50, "First name is too long"),
+
+    lastName: z
+      .string()
+      .trim()
+      .min(2, "Last name must have at least 2 characters")
+      .max(50, "Last name is too long"),
+
     email: z.email("Enter a valid email address"),
-    phone: z.string().trim().optional(),
+
+    phone: z.string().trim().max(30, "Phone number is too long").optional(),
+
     password: z
       .string()
-      .min(8, "Password must have at least 8 characters")
-      .regex(/[A-Z]/, "Include at least one uppercase letter")
-      .regex(/[0-9]/, "Include at least one number"),
+      .min(12, "Password must have at least 12 characters")
+      .max(72, "Password must have at most 72 characters")
+      .refine(
+        (value) => new TextEncoder().encode(value).length <= 72,
+        "Password must not exceed 72 UTF-8 bytes",
+      ),
+
     confirmPassword: z.string(),
-    emailNotifications: z.boolean(),
-    smsNotifications: z.boolean(),
   })
   .refine((data) => data.password === data.confirmPassword, {
     message: "Passwords do not match",
     path: ["confirmPassword"],
   });
+
+// ================= BENEFITS =================
 
 const benefits = [
   {
@@ -71,16 +90,19 @@ const benefits = [
   },
 ];
 
+// ================= REGISTER COMPONENT =================
+
 export default function Register() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [previewSubmitted, setPreviewSubmitted] = useState(false);
+  const [serverError, setServerError] = useState("");
+  const [registrationSuccess, setRegistrationSuccess] = useState(false);
+
+  const { register: registerUser } = useAuth();
 
   const {
     register,
     handleSubmit,
-    watch,
-    setValue,
     formState: { errors, isSubmitting },
   } = useForm({
     resolver: zodResolver(registerSchema),
@@ -91,39 +113,56 @@ export default function Register() {
       phone: "",
       password: "",
       confirmPassword: "",
-      emailNotifications: true,
-      smsNotifications: false,
     },
   });
 
-  const emailNotifications = watch("emailNotifications");
-  const smsNotifications = watch("smsNotifications");
+  // ================= SUBMIT =================
 
-  const onSubmit = async () => {
-    // Frontend preview only.
-    // Later we'll send the registration data to our Express API.
-    setPreviewSubmitted(true);
+  const onSubmit = async (data) => {
+    setServerError("");
+
+    try {
+      await registerUser({
+        firstName: data.firstName,
+        lastName: data.lastName,
+        email: data.email,
+        phone: data.phone,
+        password: data.password,
+      });
+
+      setRegistrationSuccess(true);
+    } catch (error) {
+      const message =
+        error.response?.data?.message ||
+        "Registration failed. Please try again.";
+
+      setServerError(message);
+    }
   };
 
-  if (previewSubmitted) {
+  // ================= SUCCESS SCREEN =================
+
+  if (registrationSuccess) {
     return (
       <main className="flex min-h-[calc(100vh-5rem)] items-center justify-center bg-zinc-950 px-4 py-12 text-white">
         <Card className="w-full max-w-md border border-white/10 bg-zinc-900 p-4 text-center text-white">
           <CardContent className="space-y-5 py-8">
             <CheckCircle2 className="mx-auto size-16 text-amber-400" />
+
             <h1 className="text-2xl font-black">
-              Form validated!
+              Account Created Successfully!
             </h1>
+
             <p className="text-sm leading-6 text-zinc-400">
-              Your registration details passed frontend validation.
-              No account has been created yet. We'll enable
-              secure registration when the backend is ready.
+              Welcome to Freedom Dance Studio! Your account has been created
+              successfully. You can now sign in to your dashboard.
             </p>
+
             <Button
               asChild
               className="w-full bg-amber-400 font-bold text-zinc-950 hover:bg-amber-300"
             >
-              <Link to="/login">Return to Demo Login</Link>
+              <Link to="/login">Sign In to Your Account</Link>
             </Button>
           </CardContent>
         </Card>
@@ -131,9 +170,11 @@ export default function Register() {
     );
   }
 
+  // ================= REGISTRATION FORM =================
+
   return (
     <main className="relative min-h-[calc(100vh-5rem)] overflow-hidden bg-zinc-950 px-4 py-12 text-white sm:px-6">
-      {/* Background */}
+      {/* BACKGROUND */}
       <div className="pointer-events-none absolute inset-0">
         <div className="absolute -left-32 top-0 size-96 rounded-full bg-amber-500/10 blur-[110px]" />
         <div className="absolute -right-32 bottom-0 size-96 rounded-full bg-amber-500/5 blur-[110px]" />
@@ -146,6 +187,7 @@ export default function Register() {
             <div className="flex size-12 items-center justify-center rounded-xl border border-amber-400/40 bg-amber-400/10 text-2xl font-black text-amber-400">
               F
             </div>
+
             <div>
               <p className="font-black tracking-wider text-white">
                 FREEDOM <span className="text-amber-400">DANCE</span>
@@ -170,10 +212,10 @@ export default function Register() {
                 <br />
                 <span className="text-amber-400">one step.</span>
               </h1>
+
               <p className="mt-5 max-w-sm leading-7 text-zinc-400">
-                Join the Freedom Dance Studio community and
-                discover a world of movement, connection, and
-                unforgettable experiences.
+                Join the Freedom Dance Studio community and discover a world of
+                movement, connection, and unforgettable experiences.
               </p>
             </div>
 
@@ -183,11 +225,10 @@ export default function Register() {
                   <div className="flex size-11 shrink-0 items-center justify-center rounded-xl border border-amber-400/20 bg-amber-400/10 text-amber-400">
                     <Icon className="size-5" />
                   </div>
+
                   <div>
                     <h3 className="font-semibold text-white">{title}</h3>
-                    <p className="mt-1 text-sm text-zinc-400">
-                      {description}
-                    </p>
+                    <p className="mt-1 text-sm text-zinc-400">{description}</p>
                   </div>
                 </div>
               ))}
@@ -222,21 +263,17 @@ export default function Register() {
               <CardDescription className="text-sm leading-6 text-zinc-400">
                 Join Freedom Dance Studio as a dancer.
               </CardDescription>
-
-              <div className="rounded-lg border border-amber-400/20 bg-amber-400/5 p-3 text-xs leading-5 text-amber-200">
-                Development preview: this form validates your
-                information but does not create an account yet.
-              </div>
             </CardHeader>
 
             <CardContent className="px-0">
               <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
-                {/* NAME FIELDS */}
+                {/* FIRST NAME & LAST NAME */}
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div className="space-y-2">
                     <Label htmlFor="firstName" className="text-zinc-200">
                       First Name
                     </Label>
+
                     <Input
                       id="firstName"
                       placeholder="First name"
@@ -244,6 +281,7 @@ export default function Register() {
                       {...register("firstName")}
                       className="h-12 border-white/10 bg-zinc-950/70 text-white placeholder:text-zinc-600"
                     />
+
                     {errors.firstName && (
                       <p className="text-xs text-red-400">
                         {errors.firstName.message}
@@ -255,6 +293,7 @@ export default function Register() {
                     <Label htmlFor="lastName" className="text-zinc-200">
                       Last Name
                     </Label>
+
                     <Input
                       id="lastName"
                       placeholder="Last name"
@@ -262,6 +301,7 @@ export default function Register() {
                       {...register("lastName")}
                       className="h-12 border-white/10 bg-zinc-950/70 text-white placeholder:text-zinc-600"
                     />
+
                     {errors.lastName && (
                       <p className="text-xs text-red-400">
                         {errors.lastName.message}
@@ -275,8 +315,10 @@ export default function Register() {
                   <Label htmlFor="email" className="text-zinc-200">
                     Email Address
                   </Label>
+
                   <div className="relative">
                     <Mail className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-zinc-500" />
+
                     <Input
                       id="email"
                       type="email"
@@ -286,6 +328,7 @@ export default function Register() {
                       className="h-12 border-white/10 bg-zinc-950/70 pl-10 text-white placeholder:text-zinc-600"
                     />
                   </div>
+
                   {errors.email && (
                     <p className="text-xs text-red-400">
                       {errors.email.message}
@@ -297,12 +340,12 @@ export default function Register() {
                 <div className="space-y-2">
                   <Label htmlFor="phone" className="text-zinc-200">
                     Phone Number
-                    <span className="ml-2 text-xs text-zinc-500">
-                      Optional
-                    </span>
+                    <span className="ml-2 text-xs text-zinc-500">Optional</span>
                   </Label>
+
                   <div className="relative">
                     <Phone className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-zinc-500" />
+
                     <Input
                       id="phone"
                       type="tel"
@@ -312,6 +355,12 @@ export default function Register() {
                       className="h-12 border-white/10 bg-zinc-950/70 pl-10 text-white placeholder:text-zinc-600"
                     />
                   </div>
+
+                  {errors.phone && (
+                    <p className="text-xs text-red-400">
+                      {errors.phone.message}
+                    </p>
+                  )}
                 </div>
 
                 {/* PASSWORD */}
@@ -319,8 +368,10 @@ export default function Register() {
                   <Label htmlFor="password" className="text-zinc-200">
                     Password
                   </Label>
+
                   <div className="relative">
                     <LockKeyhole className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-zinc-500" />
+
                     <Input
                       id="password"
                       type={showPassword ? "text" : "password"}
@@ -329,10 +380,13 @@ export default function Register() {
                       {...register("password")}
                       className="h-12 border-white/10 bg-zinc-950/70 pl-10 pr-11 text-white placeholder:text-zinc-600"
                     />
+
                     <button
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
-                      aria-label={showPassword ? "Hide password" : "Show password"}
+                      aria-label={
+                        showPassword ? "Hide password" : "Show password"
+                      }
                       className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-amber-400"
                     >
                       {showPassword ? (
@@ -342,9 +396,11 @@ export default function Register() {
                       )}
                     </button>
                   </div>
+
                   <p className="text-xs text-zinc-500">
-                    At least 8 characters, one uppercase letter, and one number.
+                    At least 12 characters (maximum 72 UTF-8 bytes).
                   </p>
+
                   {errors.password && (
                     <p className="text-xs text-red-400">
                       {errors.password.message}
@@ -357,8 +413,10 @@ export default function Register() {
                   <Label htmlFor="confirmPassword" className="text-zinc-200">
                     Confirm Password
                   </Label>
+
                   <div className="relative">
                     <LockKeyhole className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-zinc-500" />
+
                     <Input
                       id="confirmPassword"
                       type={showConfirmPassword ? "text" : "password"}
@@ -367,10 +425,15 @@ export default function Register() {
                       {...register("confirmPassword")}
                       className="h-12 border-white/10 bg-zinc-950/70 pl-10 pr-11 text-white placeholder:text-zinc-600"
                     />
+
                     <button
                       type="button"
-                      onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                      aria-label={showConfirmPassword ? "Hide password" : "Show password"}
+                      onClick={() =>
+                        setShowConfirmPassword(!showConfirmPassword)
+                      }
+                      aria-label={
+                        showConfirmPassword ? "Hide password" : "Show password"
+                      }
                       className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-amber-400"
                     >
                       {showConfirmPassword ? (
@@ -380,6 +443,7 @@ export default function Register() {
                       )}
                     </button>
                   </div>
+
                   {errors.confirmPassword && (
                     <p className="text-xs text-red-400">
                       {errors.confirmPassword.message}
@@ -387,49 +451,15 @@ export default function Register() {
                   )}
                 </div>
 
-                {/* NOTIFICATION PREFERENCES */}
-                <div className="space-y-4 rounded-xl border border-white/10 bg-zinc-950/40 p-4">
-                  <div>
-                    <h3 className="text-sm font-semibold text-white">
-                      Notification Preferences
-                    </h3>
-                    <p className="mt-1 text-xs text-zinc-500">
-                      Choose how you would like to hear from us.
-                    </p>
+                {/* SERVER ERROR */}
+                {serverError && (
+                  <div
+                    role="alert"
+                    className="rounded-xl border border-red-500/30 bg-red-500/10 p-3 text-sm text-red-300"
+                  >
+                    {serverError}
                   </div>
-
-                  <div className="flex items-start gap-3">
-                    <Checkbox
-                      id="emailNotifications"
-                      checked={emailNotifications}
-                      onCheckedChange={(checked) =>
-                        setValue("emailNotifications", checked === true)
-                      }
-                    />
-                    <Label
-                      htmlFor="emailNotifications"
-                      className="cursor-pointer text-sm leading-5 text-zinc-300"
-                    >
-                      Send me class updates, events, and special offers by email.
-                    </Label>
-                  </div>
-
-                  <div className="flex items-start gap-3">
-                    <Checkbox
-                      id="smsNotifications"
-                      checked={smsNotifications}
-                      onCheckedChange={(checked) =>
-                        setValue("smsNotifications", checked === true)
-                      }
-                    />
-                    <Label
-                      htmlFor="smsNotifications"
-                      className="cursor-pointer text-sm leading-5 text-zinc-300"
-                    >
-                      Send me reminders and updates by SMS.
-                    </Label>
-                  </div>
-                </div>
+                )}
 
                 {/* SUBMIT */}
                 <Button
@@ -437,8 +467,17 @@ export default function Register() {
                   disabled={isSubmitting}
                   className="h-12 w-full rounded-xl bg-gradient-to-r from-amber-300 to-amber-500 font-bold text-zinc-950 hover:from-amber-200 hover:to-amber-400"
                 >
-                  Validate Registration
-                  <ArrowRight className="ml-2 size-4" />
+                  {isSubmitting ? (
+                    <>
+                      <Loader2 className="mr-2 size-4 animate-spin" />
+                      Creating Account...
+                    </>
+                  ) : (
+                    <>
+                      Create Account
+                      <ArrowRight className="ml-2 size-4" />
+                    </>
+                  )}
                 </Button>
               </form>
 
