@@ -3,30 +3,50 @@ import { Routes, Route, useLocation } from "react-router-dom";
 
 import { AuthProvider, useAuth } from "./auth/AuthContext";
 
-// Layouts
+// ======================================================
+// LAYOUTS
+// ======================================================
+
 import PublicLayouts from "./layouts/PublicLayouts";
 import DashboardLayout from "./layouts/DashboardLayout";
 
-// Route protection
+// ======================================================
+// ROUTE PROTECTION
+// ======================================================
+
 import ProtectedRoute from "./components/ProtectedRoute";
 
-// Reusable components
+// ======================================================
+// REUSABLE COMPONENTS
+// ======================================================
+
 import Page from "./components/Page";
 
-// Public pages
+// ======================================================
+// PUBLIC PAGES
+// ======================================================
+
 import Login from "./pages/public/Login";
 import Register from "./pages/public/Register";
 import ForgotPassword from "./pages/public/ForgotPassword";
 
-// Shared pages
+// ======================================================
+// SHARED PAGES
+// ======================================================
+
 import Unauthorized from "./pages/shared/Unauthorized";
 import Profile from "./pages/shared/Profile";
 
 // ======================================================
-// PAGE CONTENT
+// DASHBOARDS AND MANAGEMENT
 // ======================================================
 
 import DancerDashboard from "./pages/dancer/DancerDashboard";
+import StaffManagement from "./pages/manager/StaffManagement";
+
+// ======================================================
+// PAGE CONTENT
+// ======================================================
 
 const pages = {
   landing: [
@@ -107,18 +127,6 @@ const pages = {
     ["Staff Permissions", "System Activity", "Studio Settings"],
   ],
 
-  staff: [
-    "Staff Roles & Invitations",
-    "Invite instructors and managers with appropriate permissions.",
-    ["Staff Directory", "Send Invitation", "Manage Roles"],
-  ],
-
-  profile: [
-    "My Profile",
-    "Manage your contact details and communication preferences.",
-    ["Personal Information", "Phone & Email", "Notifications"],
-  ],
-
   notFound: [
     "404 — Page Not Found",
     "The page you requested does not exist.",
@@ -185,11 +193,12 @@ function AppRoutes() {
 
       <Routes>
         {/* ============================================
-            PUBLIC LAYOUT
+            PUBLIC ROUTES
         ============================================ */}
 
         <Route element={<PublicLayouts />}>
           {/* HOME */}
+
           <Route
             path="/"
             element={
@@ -204,6 +213,7 @@ function AppRoutes() {
           />
 
           {/* CLASSES */}
+
           <Route
             path="/classes"
             element={
@@ -218,6 +228,7 @@ function AppRoutes() {
           />
 
           {/* EVENTS */}
+
           <Route
             path="/events"
             element={
@@ -229,9 +240,11 @@ function AppRoutes() {
           />
 
           {/* CHECKOUT */}
+
           <Route path="/checkout" element={<StaticPage name="checkout" />} />
 
           {/* AUTHENTICATION */}
+
           <Route path="/login" element={<Login />} />
 
           <Route path="/register" element={<Register />} />
@@ -239,9 +252,11 @@ function AppRoutes() {
           <Route path="/forgot-password" element={<ForgotPassword />} />
 
           {/* ACCESS DENIED */}
+
           <Route path="/unauthorized" element={<Unauthorized />} />
 
-          {/* 404 */}
+          {/* PAGE NOT FOUND */}
+
           <Route
             path="*"
             element={
@@ -257,13 +272,16 @@ function AppRoutes() {
         </Route>
 
         {/* ============================================
-            PROTECTED ROUTES
+            AUTHENTICATED ROUTES
         ============================================ */}
 
         <Route element={<ProtectedRoute />}>
           <Route element={<DashboardLayout />}>
             {/* SHARED DASHBOARD */}
+
             <Route path="/dashboard" element={<RoleDashboard />} />
+
+            {/* PROFILE */}
 
             <Route path="/profile" element={<Profile />} />
 
@@ -304,12 +322,18 @@ function AppRoutes() {
             ======================================== */}
 
             <Route element={<ProtectedRoute roles={["manager", "admin"]} />}>
-              <Route path="/manager" element={<StaticPage name="manager" />} />
+              {/* STAFF MANAGEMENT */}
+
+              <Route path="/manager/staff" element={<StaffManagement />} />
+
+              {/* MANAGE BOOKINGS */}
 
               <Route
                 path="/manager/bookings"
                 element={<StaticPage name="manageBookings" />}
               />
+
+              {/* MANAGE EVENTS */}
 
               <Route
                 path="/manager/events"
@@ -322,12 +346,13 @@ function AppRoutes() {
             ======================================== */}
 
             <Route element={<ProtectedRoute roles={["admin"]} />}>
+              {/* ADMIN DASHBOARD */}
+
               <Route path="/admin" element={<StaticPage name="admin" />} />
 
-              <Route
-                path="/admin/staff"
-                element={<StaticPage name="staff" />}
-              />
+              {/* ADMIN STAFF MANAGEMENT */}
+
+              <Route path="/admin/staff" element={<StaffManagement />} />
             </Route>
           </Route>
         </Route>
@@ -337,7 +362,7 @@ function AppRoutes() {
 }
 
 // ======================================================
-// APP
+// MAIN APP
 // ======================================================
 
 export default function App() {

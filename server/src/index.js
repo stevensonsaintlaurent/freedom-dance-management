@@ -7,6 +7,8 @@ import authRoutes from "./routes/authRoutes.js";
 import { errorMiddleware } from "./middleware/errorMiddleware.js";
 
 import userRoutes from "./routes/userRoutes.js";
+import classRoutes from "./routes/classRoutes.js";
+import staffRoutes from "./routes/staffRoutes.js";
 
 const app = express();
 
@@ -49,6 +51,8 @@ app.get("/api/health", (req, res) => {
 app.use("/api/auth", authRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
+app.use("/api/classes", classRoutes);
+app.use("/api/staff", staffRoutes);
 
 // 404
 app.use((req, res) => {
