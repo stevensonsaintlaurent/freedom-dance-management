@@ -57,6 +57,17 @@ export function AuthProvider({ children }) {
     return response.data.user;
   };
 
+  // Update Profile
+  const updateProfile = async (profileData) => {
+    const response = await api.patch("/users/me", profileData);
+
+    const updatedUser = normalizeUser(response.data.user);
+
+    setUser(updatedUser);
+
+    return updatedUser;
+  };
+
   // Logout
   const signOut = async () => {
     await api.post("/auth/logout");
@@ -71,6 +82,7 @@ export function AuthProvider({ children }) {
         isLoading,
         signIn,
         register,
+        updateProfile,
         signOut,
       }}
     >

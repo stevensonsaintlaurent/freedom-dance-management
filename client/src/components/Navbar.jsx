@@ -21,6 +21,7 @@ import {
 import {
   DropdownMenu,
   DropdownMenuContent,
+  DropdownMenuGroup,
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
@@ -45,10 +46,14 @@ export default function Navbar() {
   const handleSignOut = async () => {
     try {
       await signOut();
+
       setMobileOpen(false);
-      navigate("/");
+
+      navigate("/login", { replace: true });
+      console.log("sign out success");
     } catch (error) {
       console.error("Unable to sign out:", error);
+      alert("Unable to sign out. Please try again.");
     }
   };
 
@@ -196,38 +201,44 @@ export default function Navbar() {
                 </DropdownMenuTrigger>
 
                 <DropdownMenuContent align="end" className="w-56">
-                  <DropdownMenuLabel>
-                    My Account
-                    <p className="mt-1 truncate text-xs font-normal text-muted-foreground">
-                      {user.email}
-                    </p>
-                  </DropdownMenuLabel>
+                  <DropdownMenuGroup>
+                    <DropdownMenuLabel>
+                      My Account
+                      <p className="mt-1 truncate text-xs font-normal text-muted-foreground">
+                        {user.email}
+                      </p>
+                    </DropdownMenuLabel>
+                  </DropdownMenuGroup>
 
                   <DropdownMenuSeparator />
 
-                  <DropdownMenuItem asChild>
-                    <Link to="/dashboard">
-                      <LayoutDashboard className="mr-2 size-4" />
-                      Dashboard
-                    </Link>
-                  </DropdownMenuItem>
+                  <DropdownMenuGroup>
+                    <DropdownMenuItem asChild>
+                      <Link to="/dashboard">
+                        <LayoutDashboard className="mr-2 size-4" />
+                        Dashboard
+                      </Link>
+                    </DropdownMenuItem>
 
-                  <DropdownMenuItem asChild>
-                    <Link to="/profile">
-                      <UserRound className="mr-2 size-4" />
-                      My Profile
-                    </Link>
-                  </DropdownMenuItem>
+                    <DropdownMenuItem asChild>
+                      <Link to="/profile">
+                        <UserRound className="mr-2 size-4" />
+                        My Profile
+                      </Link>
+                    </DropdownMenuItem>
+                  </DropdownMenuGroup>
 
                   <DropdownMenuSeparator />
 
-                  <DropdownMenuItem
-                    onSelect={handleSignOut}
-                    className="text-red-500 focus:text-red-500"
-                  >
-                    <LogOut className="mr-2 size-4" />
-                    Sign Out
-                  </DropdownMenuItem>
+                  <DropdownMenuGroup>
+                    <DropdownMenuItem
+                      onClick={handleSignOut}
+                      className="cursor-pointer text-red-500 focus:text-red-500"
+                    >
+                      <LogOut className="mr-2 size-4" />
+                      Sign Out
+                    </DropdownMenuItem>
+                  </DropdownMenuGroup>
                 </DropdownMenuContent>
               </DropdownMenu>
             </>

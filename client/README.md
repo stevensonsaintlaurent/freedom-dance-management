@@ -1,591 +1,602 @@
 # Freedom Dance Studio — Management Platform
 
-> **Project status:** Planning | **Started:** November 16, 2026 | **Developer:** Stevenson
->
-> A separate full-stack application for Freedom Dance Studio. Build and test it independently, then connect it to [vegasfreedomdancestudio.com](https://vegasfreedomdancestudio.com/), potentially at `app.vegasfreedomdancestudio.com`.
+> **Project status:** In development  
+> **Started:** November 16, 2026  
+> **Developer:** Stevenson  
+> **Current phase:** Phase 3 — Authentication and permissions  
+> **Next task:** Verify registration creates a new `MEMBER` in PostgreSQL.
 
-## Project in action
+A full-stack studio management application for dancers, instructors, managers, and administrators. Build and test this application separately from the existing [Freedom Dance Studio website](https://vegasfreedomdancestudio.com/), then consider connecting it at `app.vegasfreedomdancestudio.com`.
+
+## Project in Action
 
 - **Live app:** Not deployed yet
-- **Repository:** Add GitHub URL here
-- **Production website:** https://vegasfreedomdancestudio.com/
-- **Current phase:** Phase 1 — Project setup
-- **Next task:** Step 1 — Create project folders and React app
+- **GitHub repository:** Add repository URL when available
+- **Website:** https://vegasfreedomdancestudio.com/
+- **Frontend development:** http://localhost:5173
+- **Backend development:** http://localhost:5000
 
-## Project goal
+## 1) Project Goal
 
-Build a studio management platform where:
+- **Guests:** Browse classes and events, book and pay without a permanent account.
+- **Members:** Register, sign in, book classes and private lessons, buy tickets, and manage memberships.
+- **Instructors:** View assigned classes, rosters, and attendance.
+- **Managers:** Manage classes, bookings, instructors, events, rentals, and payments.
+- **Admins:** Manage staff permissions, settings, and studio operations.
 
-- **Guests** browse classes and events, book and pay without a permanent account, and receive confirmations.
-- **Members/dancers** register, log in/out, manage profiles, book classes/private lessons, buy tickets, view membership and payments, and receive reminders.
-- **Instructors** view assigned classes and rosters, manage attendance, and see their teaching schedules.
-- **Managers** manage students, instructors, classes, events, bookings, studio rentals, and payments.
-- **Admins** control staff access, settings, and all studio operations.
+**Important:** Public registration creates `MEMBER` accounts only. `INSTRUCTOR`, `MANAGER`, and `ADMIN` permissions require authorized administrative action. Guest checkout is not a privileged login role.
 
-**Important:** Guest checkout is not the same as a guest login. Public registration creates a `MEMBER` account only. `INSTRUCTOR`, `MANAGER`, and `ADMIN` roles are assigned through authorized admin actions.
+## 2) Technology Stack
 
-## Technology stack (planned)
+| Layer                         | Technology                                             |
+| ----------------------------- | ------------------------------------------------------ |
+| Frontend                      | React + Vite                                           |
+| Navigation                    | React Router                                           |
+| Styling                       | Tailwind CSS + shadcn/ui                               |
+| HTTP                          | Axios                                                  |
+| Frontend authentication state | React Context (`AuthContext`)                          |
+| Optional feature state        | Redux Toolkit + React Redux (planned; add when useful) |
+| Forms and validation          | React Hook Form + Zod                                  |
+| Backend                       | Node.js + Express                                      |
+| Database                      | PostgreSQL + Prisma                                    |
+| Database driver               | `pg` + `@prisma/adapter-pg`                            |
+| Authentication                | Secure HttpOnly cookie-based sessions                  |
+| Payments (planned)            | Stripe                                                 |
+| Email (planned)               | Resend                                                 |
+| SMS (planned)                 | Twilio                                                 |
 
-| Layer          | Technology                                                                         |
-| -------------- | ---------------------------------------------------------------------------------- |
-| Frontend       | React + Vite                                                                       |
-| Routing        | React Router                                                                       |
-| UI             | Tailwind CSS + shadcn/ui                                                           |
-| State          | Redux Toolkit + React Redux                                                        |
-| HTTP           | Axios                                                                              |
-| Backend        | Node.js + Express                                                                  |
-| Database       | PostgreSQL + Prisma                                                                |
-| Authentication | Custom secure cookie-based sessions (planned; decide implementation before coding) |
-| Payments       | Stripe Checkout + Billing                                                          |
-| Email          | Resend                                                                             |
-| SMS            | Twilio                                                                             |
-| Deployment     | Choose later; frontend and API can deploy independently                            |
+> This app does **not** use the Jobster tutorial's Create React App, styled-components, bearer tokens in localStorage, or Jobster API. The Jobster document is a _formatting and learning-style reference_, not the implementation for this project.
 
-Keep versions current and check each library's official documentation when implementing. This guide is a roadmap, not a claim that features are already built.
+## 3) Daily Development Workflow
 
-## Daily workflow — read this first
-
-1. Open this README and find **Current phase** and **Next task** above.
-2. Review the checklist for that step.
-3. Work on **one small feature** at a time.
-4. Test manually and, where practical, add automated tests.
-5. Check off the task **only after it works**.
-6. Update the daily development log at the bottom.
-7. Commit the working changes to Git.
-8. Update **Next task** before ending the day.
-
-**Daily template:**
-
-```md
-### YYYY-MM-DD
-
-- Worked on:
-- Files created/changed:
-- What works:
-- Bugs/errors:
-- What I learned:
-- Next task:
-- Git commit:
-```
-
-## Progress tracker
-
-- [ ] Phase 1 — Project setup and UI foundation
-- [ ] Phase 2 — Backend and database
-- [ ] Phase 3 — Authentication and permissions
-- [ ] Phase 4 — Dancer, instructor, manager, and admin dashboards
-- [ ] Phase 5 — Classes, events, and schedules
-- [ ] Phase 6 — Bookings, tickets, and attendance
-- [ ] Phase 7 — Payments and memberships
-- [ ] Phase 8 — Email and SMS notifications
-- [ ] Phase 9 — Rentals, reporting, and admin tools
-- [ ] Phase 10 — Testing, security, deployment, and website integration
+1. Read **Current phase** and **Next task** at the top of this README.
+2. Work on **one small feature**.
+3. Run the frontend and backend; test the feature.
+4. Check errors in the browser console and server terminal.
+5. Update the checklist **only when verified**.
+6. Add a short development-log entry.
+7. Commit working changes to Git.
+8. Set the next task.
 
 ---
 
-## Phase 1 — Project setup and UI foundation
+# Phase 1 — React Setup and UI Foundation
 
-### 1) Create project and React app
+## 4) Create the React App — Completed
 
-From a terminal in the directory where you keep projects:
+From the project root:
 
 ```sh
-mkdir freedom-dance-management
-cd freedom-dance-management
 npm create vite@latest client -- --template react
 cd client
 npm install
 npm run dev
 ```
 
-- [ ] Vite app runs locally (use the URL shown in the terminal; usually `http://localhost:5173`).
-- [ ] Replace Vite starter content with a simple Freedom Dance Studio landing page.
-- [ ] Update page title and favicon.
-- [ ] Copy this `README.md` to the project root.
+- [x] React + Vite development environment runs.
+- [x] App is accessible locally.
+- [x] Initial public UI and navigation created.
+- [ ] Verify final page title, favicon, and all responsive layouts.
 
-### 2) Install frontend dependencies
+## 5) Install Frontend Dependencies — Core Setup Completed
+
+The project uses React Router, Axios, Tailwind CSS, shadcn/ui, React Hook Form, and Zod. Install dependencies based on the actual `client/package.json` rather than reinstalling packages blindly.
+
+For a fresh project, common packages include:
 
 ```sh
-cd client
-npm install react-router-dom @reduxjs/toolkit react-redux axios react-toastify lucide-react
+npm install react-router-dom axios lucide-react react-hook-form zod @hookform/resolvers
 ```
 
-Install and configure Tailwind CSS using the **current Tailwind + Vite documentation**, then add shadcn/ui using its current Vite guide. Avoid copying old Tailwind configuration from a different major version.
+Configure Tailwind CSS and shadcn/ui using their documentation for the versions installed in the project.
 
-- [ ] Router installed.
-- [ ] Redux Toolkit installed.
-- [ ] Axios and toast notifications installed.
-- [ ] Tailwind works.
-- [ ] shadcn/ui configured.
+- [x] React Router used for navigation.
+- [x] Axios configured for backend requests.
+- [x] Tailwind CSS and shadcn/ui used in the interface.
+- [x] Form validation approach established.
+- [ ] Review accessibility and mobile responsiveness across every page.
 
-### 3) Create initial frontend structure
+## 6) Project Structure
+
+The following shows **important known folders/files**, not a claim that every planned folder already exists:
 
 ```text
-client/
-  src/
-    app/
-      store.js
-    assets/
-    components/
-      common/
-      layout/
-    features/
-      auth/
-      classes/
-      events/
-      bookings/
-      payments/
-      notifications/
-    layouts/
-      PublicLayout.jsx
-      DashboardLayout.jsx
-    pages/
-      public/
-      auth/
-      dancer/
-      instructor/
-      manager/
-      admin/
-    services/
-      api.js
-    App.jsx
-    main.jsx
+freedom-dance-management/
+├── README.md
+├── client/
+│   └── src/
+│       ├── api/
+│       │   └── axios.js
+│       ├── auth/
+│       │   └── AuthContext.jsx
+│       ├── components/
+│       │   └── Navbar.jsx
+│       ├── pages/
+│       │   └── Register.jsx
+│       ├── App.jsx
+│       └── main.jsx
+└── server/
+    ├── prisma/
+    │   └── schema.prisma
+    └── src/
+        ├── lib/
+        │   └── session.js
+        └── index.js
 ```
 
-- [ ] Create folders only when needed; avoid building empty files for every feature at once.
-- [ ] Create reusable `Navbar`, `Sidebar`, `Logo`, `Loading`, and form components.
-- [ ] Build responsive desktop/mobile navigation.
+Add folders for classes, bookings, memberships, events, and payments **when implementing those features**. Avoid empty placeholder files.
 
-### 4) Configure Redux Toolkit
+## 7) Routing and Protected Pages — Core Flow Tested
 
-`client/src/app/store.js`:
-
-```js
-import { configureStore } from "@reduxjs/toolkit";
-
-export const store = configureStore({
-  reducer: {}, // Add feature reducers as they are built
-});
-```
-
-Wrap `<App />` with `<Provider store={store}>` in `main.jsx`.
-
-- [ ] Provider works.
-- [ ] Add `authSlice` later, once authentication state is designed.
-- [ ] Use the modern `extraReducers: (builder) => { builder.addCase(...) }` syntax when creating async slices.
-
-### 5) Create routes and layouts
-
-Planned routes (refine while building):
+Key routes:
 
 ```text
-/                     Public app landing
-/login                Sign in
-/register             Create dancer account
-/forgot-password      Request password reset
-/classes              Public class listing
-/events               Public events
-/checkout             Guest/member checkout entry
-/dashboard            Signed-in user's home (role-aware)
-/dancer/bookings      Dancer's bookings
-/dancer/membership    Dancer's membership
-/instructor/classes   Assigned instructor classes
-/instructor/attendance Attendance
-/manager              Manager overview
-/manager/bookings     Manage bookings
-/manager/events       Manage events
-/admin                Admin overview
-/admin/staff          Staff roles and invitations
-/profile              Personal profile
-/*                    Not found
+/             Public landing
+/login        Login
+/register     Create dancer account
+/dashboard    Protected dashboard
+/profile      User profile (planned/verify)
+/classes      Public classes (planned)
+/events       Public events (planned)
+/*            Not found
 ```
 
-- [ ] Public routes render.
-- [ ] Dashboard layout renders.
-- [ ] Not-found page works.
-- [ ] Navigation works without refresh loops.
-- [ ] No `dispatch(action())` is called directly during render; dispatch inside handlers/effects as appropriate.
+A protected route must wait until authentication finishes loading before redirecting:
+
+```jsx
+import { Navigate } from "react-router-dom";
+import { useAuth } from "../auth/AuthContext";
+
+export default function ProtectedRoute({ children }) {
+  const { user, isLoading } = useAuth();
+
+  if (isLoading) return <p>Loading...</p>;
+  if (!user) return <Navigate to="/login" replace />;
+  return children;
+}
+```
+
+> Adjust import paths to match the actual file location. Frontend route protection improves UX; the **backend must independently authorize every protected API request**.
+
+- [x] Login and dashboard navigation tested.
+- [x] Protected dashboard redirects after logout.
+- [x] Refreshing an authenticated dashboard retains the session.
+- [ ] Verify 404 page and all remaining planned routes.
 
 ---
 
-## Phase 2 — Backend and database
+# Phase 2 — Express, PostgreSQL, and Prisma
 
-### 6) Initialize Express API
-
-From the project root:
-
-```sh
-mkdir server
-cd server
-npm init -y
-npm install express cors helmet cookie-parser dotenv zod express-rate-limit
-npm install -D nodemon
-```
-
-Configure `package.json` with `"type": "module"`, and scripts such as `"dev": "nodemon src/index.js"` and `"start": "node src/index.js"`.
-
-Example `server/src/index.js`:
-
-```js
-import "dotenv/config";
-import express from "express";
-import helmet from "helmet";
-
-const app = express();
-app.use(helmet());
-app.use(express.json());
-
-app.get("/api/health", (_req, res) => {
-  res.json({ status: "ok", app: "Freedom Dance Studio API" });
-});
-
-const port = process.env.PORT || 5000;
-app.listen(port, () => console.log(`API running on port ${port}`));
-```
-
-- [ ] `npm run dev` starts server.
-- [ ] `GET /api/health` returns JSON.
-- [ ] Configure CORS with an explicit allowed frontend origin when needed.
-- [ ] Add centralized error handling and input validation.
-- [ ] Create `.env.example`; never commit `.env` or API keys.
-
-### 7) Set up PostgreSQL + Prisma
+## 8) Express API — Core Setup Completed
 
 ```sh
 cd server
-npm install @prisma/client @prisma/adapter-pg pg
-npm install -D prisma
-npx prisma init
+npm run dev
 ```
 
-Follow the installed Prisma version's current configuration and driver adapter instructions. Do not assume older Prisma tutorials use the same initialization pattern.
+The API runs at `http://localhost:5000` in development.
 
-**Initial database entities:**
+### Health Check
 
-| Entity               | Purpose                                   |
-| -------------------- | ----------------------------------------- |
-| User                 | Dancer/staff identity, contact info, role |
-| Session              | Secure login sessions                     |
-| Class                | Recurring class definition                |
-| ClassSession         | Specific class occurrence/date/time       |
-| Event                | Workshop, social, concert                 |
-| Booking              | Class/event/private lesson reservation    |
-| Attendance           | Check-in records                          |
-| MembershipPlan       | Membership pricing and benefits           |
-| Subscription         | Member's active/expired plan              |
-| Payment              | Payment provider IDs and status           |
-| Notification         | Email/SMS delivery and reminder tracking  |
-| StudioRental         | Rental inquiries/reservations             |
-| InstructorAssignment | Assigned teacher and class/session        |
-
-- [ ] Set up database connection.
-- [ ] Define first Prisma models: `User` and `Session`.
-- [ ] Create and apply first migration.
-- [ ] Confirm Prisma can query database.
-- [ ] Add other models incrementally.
-
-### 8) API structure
-
-```text
-server/
-  prisma/
-    schema.prisma
-  src/
-    controllers/
-    middleware/
-    routes/
-    services/
-    jobs/
-    lib/
-    index.js
-  .env.example
-  package.json
+```http
+GET http://localhost:5000/api/health
 ```
 
-- [ ] Add consistent response/error patterns.
-- [ ] Validate all incoming data with Zod or equivalent.
-- [ ] Use database transactions for related writes.
+Expected: a successful JSON response.
+
+- [x] Express development server runs.
+- [x] Health endpoint tested.
+- [x] Frontend connects to backend.
+- [ ] Audit error handling, security headers, rate limits, and environment-variable setup.
+
+## 9) PostgreSQL and Prisma — Initial Models Working
+
+Current confirmed database models:
+
+- `User`: first name, last name, email, phone, hashed password, role, status, timestamps.
+- `Session`: session token hash, expiration, revocation, user association.
+
+Roles:
+
+```prisma
+enum Role {
+  MEMBER
+  INSTRUCTOR
+  MANAGER
+  ADMIN
+}
+```
+
+Prisma 7 uses the PostgreSQL driver adapter in this project. Follow the existing Prisma configuration when adding models or migrations.
+
+Useful commands (from `server/`):
+
+```sh
+npx prisma validate
+npx prisma migrate dev
+npx prisma studio
+```
+
+**Caution:** Review migration changes before applying them, especially against shared or production databases.
+
+- [x] PostgreSQL connection tested.
+- [x] `User` and `Session` models implemented.
+- [x] Prisma can query users and sessions.
+- [ ] Add class, booking, event, and membership models as their features are built.
 
 ---
 
-## Phase 3 — Authentication and permissions
+# Phase 3 — Authentication and Permissions (Current)
 
-### 9) Registration and login
+## 10) Axios — Cookies Between Frontend and Backend
 
-**Registration fields:** first name, last name, email, phone (optional until required for notifications), password, confirm password, optional notification consent.
+**File:** `client/src/api/axios.js`
 
-- [ ] `POST /api/auth/register` — creates a `MEMBER` only.
-- [ ] `POST /api/auth/login`.
-- [ ] `POST /api/auth/logout`.
-- [ ] `GET /api/auth/me`.
-- [ ] Forgot/reset password using single-use, expiring tokens.
-- [ ] Verify email; optionally verify phone before SMS.
-- [ ] Secure password hashing (Argon2id or a suitable maintained equivalent).
-- [ ] Secure, HttpOnly, SameSite cookies and appropriate CSRF protection.
-- [ ] Rate-limit authentication endpoints.
-- [ ] No password or authentication token stored in browser localStorage.
-- [ ] Handle session expiration gracefully.
+```js
+import axios from "axios";
 
-**Roles:** `MEMBER`, `INSTRUCTOR`, `MANAGER`, `ADMIN`. A guest checkout is not a privileged role. A manager/instructor may also have dancer capabilities if permitted by policy.
+const api = axios.create({
+  baseURL: "http://localhost:5000/api",
+  withCredentials: true,
+});
 
-### 10) Protected routes and role permissions
+export default api;
+```
 
-- [ ] Frontend redirects unauthorized visitors.
-- [ ] Backend independently verifies sessions and permissions for **every protected request**.
-- [ ] Instructors only see rosters for their assigned classes.
-- [ ] Managers only see authorized operational/financial information.
-- [ ] Admin can invite/promote/revoke staff roles.
-- [ ] Test cross-user access attempts (user A cannot see user B's bookings).
+`withCredentials: true` allows the browser to send the session cookie to the API. Production origins and cookie settings must be configured separately.
+
+## 11) Authentication API — Tested
+
+| Method | Endpoint                    | Purpose         | Status                                       |
+| ------ | --------------------------- | --------------- | -------------------------------------------- |
+| `POST` | `/api/auth/register`        | Create member   | API tested; frontend flow needs verification |
+| `POST` | `/api/auth/login`           | Sign in         | Tested                                       |
+| `GET`  | `/api/auth/me`              | Restore session | Tested                                       |
+| `POST` | `/api/auth/logout`          | Revoke session  | Tested                                       |
+| `POST` | `/api/auth/forgot-password` | Request reset   | Planned                                      |
+| `POST` | `/api/auth/reset-password`  | Complete reset  | Planned                                      |
+
+The backend creates an HttpOnly session cookie after login. Do **not** store passwords or session tokens in browser localStorage.
+
+## 12) AuthContext — Login, Refresh, and Logout Working
+
+**File:** `client/src/auth/AuthContext.jsx`
+
+Main responsibilities:
+
+1. On app load, request `GET /auth/me`.
+2. Keep the current user in React state.
+3. Expose `signIn(email, password)`.
+4. Expose `register(userData)`.
+5. Expose `signOut()`.
+6. Track `isLoading` while checking authentication.
+
+The logout action should revoke the backend session **before** clearing local user state:
+
+```js
+const signOut = async () => {
+  await api.post("/auth/logout");
+  setUser(null);
+};
+```
+
+- [x] Login works.
+- [x] Login survives page refresh.
+- [x] Logout revokes the session.
+- [x] Logout redirects to `/login`.
+- [x] Dashboard access is blocked after logout.
+
+## 13) Navbar Dropdown — Fixed
+
+**Problem:** The avatar menu initially crashed because the Base UI menu label was outside its required menu group.
+
+**Fix:** Wrap menu labels/items in the appropriate `DropdownMenuGroup`.
+
+**Problem:** Clicking **Sign Out** did nothing.
+
+**Fix:** Use `onClick` instead of `onSelect` for the project's Base UI dropdown item:
+
+```jsx
+<DropdownMenuItem onClick={handleSignOut}>Sign Out</DropdownMenuItem>
+```
+
+**Verified:** Clicking Sign Out redirects to login, removes the authenticated avatar, and blocks `/dashboard` until login.
+
+## 14) Register a New Dancer — Next Task
+
+**Goal:** Confirm the React registration form creates a second user in PostgreSQL.
+
+### Test steps
+
+1. Start both development servers.
+2. Visit `http://localhost:5173/register`.
+3. Register with a **new email** and a valid password.
+4. Confirm the UI shows success or an appropriate next step.
+5. Open Prisma Studio or query the database to confirm the user exists.
+6. Verify the new account has role `MEMBER`.
+7. Log in using the newly registered account.
+8. Test invalid inputs and duplicate emails.
+
+- [ ] React registration completes successfully.
+- [ ] User appears in PostgreSQL.
+- [ ] New user has role `MEMBER`.
+- [ ] New user can log in.
+- [ ] Duplicate email and invalid form inputs show helpful errors.
+
+**Do not mark this section complete until all tests pass.**
+
+## 15) Profile Management — After Registration
+
+Planned fields:
+
+- First name
+- Last name
+- Email
+- Phone number
+
+Planned behavior:
+
+- Load the authenticated user's profile.
+- Edit allowed fields.
+- Validate inputs on client and server.
+- Save changes to PostgreSQL.
+- Update `AuthContext` after a successful response.
+- Prevent users from editing another user's profile.
+
+- [ ] Create or verify profile page.
+- [ ] Implement protected profile-update API.
+- [ ] Save and reload profile changes.
+- [ ] Test unauthorized updates.
+
+## 16) Authentication Security — Before Production
+
+- [ ] Password reset with single-use expiring tokens.
+- [ ] Email verification.
+- [ ] Rate-limit login and registration.
+- [ ] Review CSRF defenses for cookie-authenticated mutations.
+- [ ] Test session expiration and revocation.
+- [ ] Enforce role permissions on backend endpoints.
+- [ ] Test that one user cannot read or change another user's data.
+- [ ] Review cookie settings for production HTTPS and domains.
 
 ---
 
-## Phase 4 — Dashboards
+# Phase 4 — Role-Based Dashboards
 
-### 11) Dancer dashboard
+## 17) Dancer Dashboard
 
-- [ ] Welcome/profile card.
+- [ ] Welcome and profile summary.
 - [ ] Upcoming bookings and events.
-- [ ] Current membership and remaining benefits.
-- [ ] Tickets/receipts/payment history.
-- [ ] Cancel/reschedule according to studio rules.
-- [ ] Email/SMS preferences and opt-out controls.
+- [ ] Membership status and remaining class benefits.
+- [ ] Tickets, receipts, and payment history.
+- [ ] Cancel/reschedule bookings according to studio policy.
 
-### 12) Instructor dashboard
+## 18) Instructor Dashboard
 
-- [ ] Assigned teaching calendar.
-- [ ] Student rosters with limited contact visibility.
-- [ ] Attendance/check-in interface.
-- [ ] Class announcements where authorized.
-- [ ] Personal profile and availability.
+- [ ] Assigned class calendar.
+- [ ] Student roster for assigned classes only.
+- [ ] Attendance check-in.
+- [ ] Instructor availability and announcements.
 
-### 13) Manager dashboard
+## 19) Manager Dashboard
 
-- [ ] Booking overview.
-- [ ] Manage classes, sessions, events, and instructors.
-- [ ] View memberships and payment statuses.
-- [ ] Manage rental requests.
-- [ ] Send approved operational announcements.
+- [ ] Students and instructors overview.
+- [ ] Manage classes, events, and bookings.
+- [ ] Review rental requests.
+- [ ] View authorized payment and membership information.
 
-### 14) Admin dashboard
+## 20) Admin Dashboard
 
-- [ ] Staff invites and role permissions.
+- [ ] Staff invitations and role changes.
 - [ ] Studio settings and pricing.
-- [ ] Audit log for sensitive actions.
-- [ ] Financial reporting and payment reconciliation.
+- [ ] Audit log for sensitive changes.
+- [ ] Financial reports and reconciliation.
 
 ---
 
-## Phase 5 — Classes, events, and schedules
+# Phase 5 — Classes, Events, and Schedules
 
-### 15) Class management
+## 21) Class Management
 
-- [ ] Create/update/archive classes.
-- [ ] Configure weekday, start/end time, time zone (`America/Los_Angeles` for Las Vegas), instructor, room, capacity, and price.
-- [ ] Generate dated sessions from recurring schedules.
-- [ ] Handle cancellations, exceptions, and schedule changes.
-- [ ] Public class calendar and filters by style/level.
+- [ ] Add `Class` and `ClassSession` Prisma models.
+- [ ] Create, edit, archive classes.
+- [ ] Store weekday, start/end time, room, capacity, level, instructor, and price.
+- [ ] Use `America/Los_Angeles` for studio scheduling.
+- [ ] Generate dated sessions and handle cancellations.
+- [ ] Display class durations clearly in the UI.
 
-### 16) Events
+## 22) Event Management
 
-- [ ] Create workshop, social, concert, or intensive event.
-- [ ] Add title, description, image, instructor/artists, location, date/time, capacity.
-- [ ] Add ticket tiers, early-bird deadlines, and discounts.
-- [ ] Publish/unpublish events.
-- [ ] Show upcoming events on each dashboard.
+- [ ] Add `Event` model.
+- [ ] Create workshops, socials, concerts, and intensives.
+- [ ] Support event images, artists, locations, capacity, and ticket tiers.
+- [ ] Support early-bird deadlines and publish/unpublish state.
 
 ---
 
-## Phase 6 — Bookings, tickets, and attendance
+# Phase 6 — Bookings, Tickets, and Attendance
 
-### 17) Booking flow
+## 23) Booking Flow
 
 ```text
-Browse class/event
-  -> Choose date and ticket/plan
-  -> Login / Register / Continue as guest
-  -> Check availability and price on server
+Browse class or event
+  -> Choose date / session / ticket
+  -> Sign in, register, or continue as guest
+  -> Backend checks availability and price
   -> Create pending booking
   -> Pay if required
-  -> Confirm booking after verified payment
+  -> Confirm after verified payment
   -> Send confirmation
   -> Show booking in dashboard or guest email
 ```
 
-- [ ] Prevent overbooking under simultaneous requests.
-- [ ] Support member entitlements and free classes.
-- [ ] Guest booking by email, with secure lookup/cancellation links.
-- [ ] Unique booking reference.
-- [ ] Booking cancellation/refund rules.
-- [ ] Attendance check-in (manual first, QR later).
-- [ ] Private lesson availability and scheduling.
+- [ ] Create `Booking` model and API.
+- [ ] Prevent simultaneous overbooking.
+- [ ] Support guest email bookings.
+- [ ] Generate unique booking references.
+- [ ] Support cancellation and refund policies.
+- [ ] Add attendance check-in.
+- [ ] Add private lesson scheduling.
 
 ---
 
-## Phase 7 — Payments and memberships
+# Phase 7 — Payments and Memberships
 
-### 18) Stripe integration
+## 24) Stripe Payments
 
-- [ ] Create Stripe test account and use test keys.
-- [ ] Server creates Checkout sessions using server-calculated prices.
-- [ ] Never accept client-submitted amounts as authoritative.
-- [ ] Verify Stripe webhook signatures.
-- [ ] Process payment/subscription events idempotently.
-- [ ] Mark bookings paid only after trusted confirmation.
-- [ ] Record Stripe IDs, payment statuses, refunds, and receipts.
-- [ ] Test failed payments, cancellations, and duplicate webhooks.
-- [ ] Switch to live keys only after end-to-end testing.
+- [ ] Create Stripe test configuration.
+- [ ] Calculate authoritative prices on the backend.
+- [ ] Create checkout sessions.
+- [ ] Verify webhook signatures.
+- [ ] Process webhooks idempotently.
+- [ ] Record payments, refunds, and receipts.
+- [ ] Test successful, failed, and canceled payments.
 
-### 19) Membership plans
+## 25) Memberships
 
-- [ ] Admin can create/edit membership plans and prices.
-- [ ] Monthly subscription enrollment and renewal.
-- [ ] Benefits/usage limits (unlimited classes or class credits).
-- [ ] Proration, cancellation, expiration, and failed-payment handling.
-- [ ] Dancer sees active plan and renewal date.
+- [ ] Create `MembershipPlan` and `Subscription` models.
+- [ ] Support monthly plans and class credits.
+- [ ] Display renewal and expiration dates.
+- [ ] Apply benefits to bookings.
+- [ ] Handle cancellations and failed renewals.
 
 ---
 
-## Phase 8 — Email and SMS reminders
+# Phase 8 — Email and SMS
 
-### 20) Email with Resend
+## 26) Email with Resend
 
-- [ ] Verify sending domain and configure provider credentials.
-- [ ] Booking confirmation.
-- [ ] Receipt/payment status.
-- [ ] Reminder 24 hours before class.
-- [ ] Class cancellation/update notification.
-- [ ] Membership renewal reminder.
+- [ ] Verify domain and configure credentials.
+- [ ] Send booking confirmations and receipts.
+- [ ] Send class reminders and cancellation notices.
+- [ ] Track failures and retries.
 
-### 21) SMS with Twilio
+## 27) SMS with Twilio
 
-- [ ] Collect phone number and appropriate consent.
-- [ ] Separate transactional and marketing preferences.
-- [ ] Support opt-out and applicable messaging registration requirements.
-- [ ] Reminder 2 hours before class (configurable).
-- [ ] Do not text users who opted out.
-- [ ] Record message delivery/failure statuses.
+- [ ] Collect appropriate SMS consent.
+- [ ] Send configurable reminders.
+- [ ] Honor opt-outs.
+- [ ] Track delivery status.
 
-### 22) Reliable scheduling
-
-- [ ] Use persistent scheduled jobs/queue, not frontend timers.
-- [ ] Store notification due time and delivery state.
-- [ ] Retry temporary failures without sending duplicates.
-- [ ] Respect Las Vegas local time and daylight saving changes.
-- [ ] Avoid reminders for canceled bookings.
-- [ ] Test email/SMS using test recipients before real users.
-
-**Example confirmation:**
-
-> Freedom Dance Studio: Your Beginner Salsa booking for Tuesday at 6:00 PM is confirmed. Check your email for details.
+Use persistent background jobs for scheduled messages; do not rely on browser timers.
 
 ---
 
-## Phase 9 — Rentals, reports, and admin tools
+# Phase 9 — Studio Rentals and Reporting
 
-### 23) Studio rentals
+## 28) Studio Rentals
 
 - [ ] Public rental inquiry form.
 - [ ] Availability calendar.
-- [ ] Manager approval/rejection.
+- [ ] Manager approval workflow.
 - [ ] Deposit and balance tracking.
-- [ ] Rental confirmation and reminders.
+- [ ] Rental confirmations and reminders.
 
-### 24) Reporting
+## 29) Reporting
 
-- [ ] Total active members.
-- [ ] Bookings by class/event.
-- [ ] Attendance and no-show rate.
-- [ ] Revenue and refunds by period.
-- [ ] Membership retention and renewals.
-- [ ] Instructor/class utilization.
-- [ ] Export authorized reports.
-
----
-
-## Phase 10 — Testing, deployment, and integration
-
-### 25) Testing checklist
-
-- [ ] Unit tests for pricing, entitlements, and permissions.
-- [ ] API integration tests for authentication, booking, and payments.
-- [ ] End-to-end tests: guest checkout, member checkout, instructor attendance, admin event creation.
-- [ ] Test mobile layout and accessibility.
-- [ ] Test expired sessions, invalid inputs, refunds, and double bookings.
-- [ ] Backups, restore test, logging, and error monitoring.
-- [ ] Privacy policy, terms, refund policy, and notification consent reviewed.
-
-### 26) Deploy separately
-
-- [ ] Deploy frontend and backend.
-- [ ] Set production environment variables securely.
-- [ ] Configure HTTPS, allowed origins, cookies, and database access.
-- [ ] Run database migrations safely.
-- [ ] Verify production webhooks and email/SMS sending.
-- [ ] Add uptime/error monitoring.
-
-### 27) Connect to existing website
-
-**Target:** Keep the current marketing website unchanged while adding links to the new application.
-
-- [ ] Configure `app.vegasfreedomdancestudio.com` (or selected URL).
-- [ ] Add `Login`, `Register`, `My Dashboard`, and `Book Now` links to existing website.
-- [ ] Link class/event cards to the correct app booking page.
-- [ ] Test navigation between the two sites on desktop/mobile.
-- [ ] Decide whether to migrate any existing booking records, and validate migration before switching traffic.
-- [ ] Launch gradually and monitor errors.
+- [ ] Active members.
+- [ ] Bookings and attendance.
+- [ ] Revenue and refunds.
+- [ ] Membership retention.
+- [ ] Class and instructor utilization.
+- [ ] Authorized exports.
 
 ---
 
-## Planned API endpoints (design draft)
+# Phase 10 — Testing, Deployment, and Website Integration
 
-```text
-GET    /api/health
-POST   /api/auth/register
-POST   /api/auth/login
-POST   /api/auth/logout
-GET    /api/auth/me
-POST   /api/auth/forgot-password
-POST   /api/auth/reset-password
-GET    /api/classes
-GET    /api/classes/:id/sessions
-GET    /api/events
-GET    /api/events/:id
-POST   /api/bookings
-GET    /api/bookings/mine
-PATCH  /api/bookings/:id/cancel
-POST   /api/checkout/session
-POST   /api/webhooks/stripe
-GET    /api/memberships/mine
-GET    /api/instructor/classes
-POST   /api/instructor/attendance
-GET    /api/manager/bookings
-POST   /api/manager/events
-PATCH  /api/manager/events/:id
-POST   /api/admin/staff/invitations
+## 30) Testing
+
+- [ ] Unit tests for pricing and permissions.
+- [ ] API tests for auth, booking, and payments.
+- [ ] End-to-end tests for guest/member booking.
+- [ ] Test mobile and accessibility.
+- [ ] Test session expiry, invalid inputs, and overbooking.
+- [ ] Review privacy, terms, refund policy, backups, and logging.
+
+## 31) Deployment
+
+- [ ] Deploy frontend and API.
+- [ ] Configure HTTPS, CORS, and production cookies.
+- [ ] Apply database migrations safely.
+- [ ] Verify production integrations.
+- [ ] Configure monitoring and backups.
+
+## 32) Connect Existing Studio Website
+
+- [ ] Configure `app.vegasfreedomdancestudio.com` or chosen app URL.
+- [ ] Add Login, Register, Dashboard, and Book Now links to marketing website.
+- [ ] Connect class and event cards to the correct booking routes.
+- [ ] Test desktop and mobile navigation between websites.
+- [ ] Migrate records only after validation, if needed.
+
+---
+
+# API Reference
+
+## Implemented / Tested Core Routes
+
+```http
+GET  /api/health
+POST /api/auth/register
+POST /api/auth/login
+GET  /api/auth/me
+POST /api/auth/logout
 ```
 
-These are proposed routes, **not implemented endpoints**. Define exact validation, authorization, response shapes, and ownership rules as each endpoint is built.
+## Planned Routes (Not Yet Implemented)
 
-## Git commands
+```http
+POST  /api/auth/forgot-password
+POST  /api/auth/reset-password
+GET   /api/classes
+GET   /api/classes/:id/sessions
+GET   /api/events
+GET   /api/events/:id
+POST  /api/bookings
+GET   /api/bookings/mine
+PATCH /api/bookings/:id/cancel
+POST  /api/checkout/session
+POST  /api/webhooks/stripe
+GET   /api/memberships/mine
+GET   /api/instructor/classes
+POST  /api/instructor/attendance
+GET   /api/manager/bookings
+POST  /api/manager/events
+PATCH /api/manager/events/:id
+POST  /api/admin/staff/invitations
+```
 
-From the project root, after initializing the repository:
+All protected endpoints require **backend** authorization, not just hidden frontend buttons.
+
+---
+
+# Troubleshooting Notes
+
+| Issue                              | What to check                                    |
+| ---------------------------------- | ------------------------------------------------ |
+| Frontend not loading               | Vite terminal, port, browser console             |
+| API request fails                  | Express terminal, Axios base URL, CORS           |
+| Login works but refresh logs out   | `/auth/me`, cookies, `withCredentials`           |
+| Protected page redirects too early | Wait for `isLoading` in `ProtectedRoute`         |
+| Avatar menu crashes                | Base UI `DropdownMenuGroup` structure            |
+| Logout click does nothing          | Use dropdown item's `onClick` handler            |
+| 401 Unauthorized                   | Session expiration, cookie, login state          |
+| 403 Forbidden                      | Role and resource permissions                    |
+| Prisma connection fails            | Database URL, adapter, database availability     |
+| Registration fails                 | Zod validation, duplicate email, server response |
+
+# Git Workflow
+
+From the project root:
 
 ```sh
-git init
 git status
 git add .
-git commit -m "chore: initialize Freedom Dance Studio management app"
+git commit -m "docs: update Freedom Dance Studio development guide"
 ```
 
-For subsequent changes:
-
-```sh
-git status
-git add .
-git commit -m "feat: describe completed feature"
-```
-
-Create `.gitignore` before the first commit:
+Recommended `.gitignore` entries:
 
 ```gitignore
 node_modules/
@@ -597,33 +608,30 @@ dist/
 .DS_Store
 ```
 
-Never commit passwords, API secrets, payment keys, private customer records, or production database dumps.
+Never commit passwords, secrets, private customer records, or database dumps.
 
-## Troubleshooting notes
+---
 
-| Problem                                      | What to check                                                           |
-| -------------------------------------------- | ----------------------------------------------------------------------- |
-| Vite doesn't start                           | Node version, install logs, package scripts, port conflicts             |
-| Route blank                                  | Router configuration, exports, browser console                          |
-| Infinite React rerenders                     | Calling `dispatch(...)` or a state setter while rendering               |
-| Redux async reducer error                    | Use `extraReducers` builder callback syntax                             |
-| API 401                                      | Session cookie, login state, allowed origins, credentials               |
-| API 403                                      | User role and resource-level permissions                                |
-| Prisma connection error                      | Database URL, server availability, adapter/config for installed version |
-| Stripe checkout succeeds but booking pending | Webhook delivery, signature verification, event processing logs         |
-| Reminder not sent                            | Consent, scheduler, time zone, provider response, opt-out status        |
+# Development Log
 
-## Daily development log
+## November 16, 2026 — Project Planning
 
-### 2026-11-16 — Project planning
+- **Worked on:** Defined platform goals, roles, phases, and standalone deployment strategy.
+- **Created:** Initial README roadmap.
+- **Learned:** Separating the management app from the marketing website allows independent testing.
 
-- **Worked on:** Defined goals, account types, feature phases, and separate-app integration strategy.
-- **Files created:** `README.md` project roadmap.
-- **What works:** Planning documentation only; application not yet built.
-- **What I learned:** Separate frontend/backend development allows testing without changing the existing website.
-- **Next task:** Phase 1, Step 1 — Create Vite React app.
-- **Git commit:** Not yet created.
+## November 18, 2026 — Authentication Progress
 
+- **Worked on:** Reviewed the React/Express authentication flow and debugged the navbar logout action.
+- **What works:** Login, session persistence on refresh, protected dashboard, avatar dropdown, logout, and redirect to login.
+- **Bugs fixed:** Base UI dropdown menu-group error; logout item needed `onClick` instead of `onSelect`.
+- **Still to verify:** End-to-end registration from the React form, database persistence, and a second account's login.
+- **Next task:** Register a second test dancer and verify the `MEMBER` record in PostgreSQL.
+- **Git commit:** Add actual commit hash after committing.
+
+## Daily Log Template
+
+```md
 ### YYYY-MM-DD
 
 - **Worked on:**
@@ -633,11 +641,19 @@ Never commit passwords, API secrets, payment keys, private customer records, or 
 - **What I learned:**
 - **Next task:**
 - **Git commit:**
+```
 
 ---
 
-## Definition of done
+# Definition of Done
 
-A task is finished only when it works, its expected errors are handled, its permissions are checked (if applicable), and the README checklist/log are updated. Do not mark a phase complete merely because the UI exists.
+A feature is complete only when:
+
+1. It works in the browser and/or API.
+2. Expected errors are handled.
+3. Backend authorization is tested where relevant.
+4. Database changes are verified when applicable.
+5. README checklist and development log are updated.
+6. Working code is committed.
 
 **Project motto:** Build one feature. Test it. Understand it. Commit it. Move to the next.

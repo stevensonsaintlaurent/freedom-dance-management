@@ -20,10 +20,13 @@ import ForgotPassword from "./pages/public/ForgotPassword";
 
 // Shared pages
 import Unauthorized from "./pages/shared/Unauthorized";
+import Profile from "./pages/shared/Profile";
 
 // ======================================================
 // PAGE CONTENT
 // ======================================================
+
+import DancerDashboard from "./pages/dancer/DancerDashboard";
 
 const pages = {
   landing: [
@@ -156,8 +159,11 @@ function StaticPage({ name, links = [] }) {
 function RoleDashboard() {
   const { user } = useAuth();
 
+  if (user?.role === "dancer") {
+    return <DancerDashboard />;
+  }
+
   const dashboardByRole = {
-    dancer: "dashboard",
     instructor: "instructorClasses",
     manager: "manager",
     admin: "admin",
@@ -259,7 +265,7 @@ function AppRoutes() {
             {/* SHARED DASHBOARD */}
             <Route path="/dashboard" element={<RoleDashboard />} />
 
-            <Route path="/profile" element={<StaticPage name="profile" />} />
+            <Route path="/profile" element={<Profile />} />
 
             {/* ========================================
                 DANCER ROUTES
