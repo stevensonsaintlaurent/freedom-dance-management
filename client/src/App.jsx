@@ -43,6 +43,8 @@ import Profile from "./pages/shared/Profile";
 
 import DancerDashboard from "./pages/dancer/DancerDashboard";
 import StaffManagement from "./pages/manager/StaffManagement";
+import CreateDanceClass from "./pages/manager/CreateDanceClass";
+import ManageClasses from "./pages/manager/ManageClasses";
 
 // ======================================================
 // PAGE CONTENT
@@ -325,6 +327,11 @@ function AppRoutes() {
               {/* STAFF MANAGEMENT */}
 
               <Route path="/manager/staff" element={<StaffManagement />} />
+              <Route
+                path="/manager/classes/new"
+                element={<CreateDanceClass />}
+              />
+              <Route path="/manager/classes" element={<ManageClasses />} />
 
               {/* MANAGE BOOKINGS */}
 

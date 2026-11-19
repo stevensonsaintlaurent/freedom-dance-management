@@ -82,6 +82,37 @@ export const createClassService = async (classData) => {
     throw error;
   }
 
+  const startsAt = new Date(classData.startsAt);
+  const endsAt = new Date(classData.endsAt);
+
+  // Check if the instructor has another class
+  // that overlaps with the requested schedule.
+  const overlappingClass = await prisma.danceClass.findFirst({
+    where: {
+      instructorId: instructor.id,
+      isActive: true,
+      startsAt: {
+        lt: endsAt,
+      },
+      endsAt: {
+        gt: startsAt,
+      },
+    },
+    select: {
+      id: true,
+      title: true,
+    },
+  });
+
+  if (overlappingClass) {
+    const error = new Error(
+      `Instructor already has a class scheduled at this time: ${overlappingClass.title}`,
+    );
+
+    error.statusCode = 409;
+    throw error;
+  }
+
   return prisma.danceClass.create({
     data: {
       title: classData.title,
