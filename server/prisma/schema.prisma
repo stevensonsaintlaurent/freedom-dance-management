@@ -27,7 +27,8 @@ model User {
   updatedAt DateTime @updatedAt
 
   sessions      Session[]
-  taughtClasses DanceClass[] @relation("ClassInstructor")
+  taughtClasses DanceClass[]  @relation("ClassInstructor")
+  weeklyClasses WeeklyClass[] @relation("WeeklyClassInstructor")
   bookings      Booking[]
 
   @@index([role])
@@ -109,4 +110,88 @@ model Booking {
   // Prevent duplicate reservations
   @@unique([userId, danceClassId])
   @@index([danceClassId, status])
+}
+
+enum DayOfWeek {
+  MONDAY
+  TUESDAY
+  WEDNESDAY
+  THURSDAY
+  FRIDAY
+  SATURDAY
+  SUNDAY
+}
+
+model WeeklyClass {
+  id          String     @id @default(uuid())
+  title       String
+  description String?
+  level       ClassLevel @default(BEGINNER)
+
+  // Recurring weekly schedule
+  dayOfWeek        DayOfWeek
+  startTimeMinutes Int
+  durationMinutes  Int
+
+  // Capacity and regular drop-in price
+  capacity   Int @default(20)
+  priceCents Int @default(1500)
+
+  isActive Boolean @default(true)
+
+  // Instructor
+  instructorId String
+  instructor   User   @relation("WeeklyClassInstructor", fields: [instructorId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  bookings WeeklyClassBooking[]
+
+  @@index([dayOfWeek, startTimeMinutes])
+  @@index([instructorId])
+}
+
+enum WeeklyBookingStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+}
+
+model WeeklyClassBooking {
+  id String @id @default(uuid())
+
+  // Shared reference for booking multiple classes together
+  bookingReference String
+
+  // Guest information — no account required
+  guestFirstName String
+  guestLastName  String
+  guestEmail     String
+  guestPhone     String
+
+  // The recurring class being booked
+  weeklyClassId String
+  weeklyClass   WeeklyClass @relation(fields: [weeklyClassId], references: [id], onDelete: Restrict)
+
+  // The actual calendar date the student will attend
+  classDate DateTime @db.Date
+
+  status WeeklyBookingStatus @default(PENDING)
+
+  // Payment is collected at the studio for now
+  priceCents Int
+  paidAt     DateTime?
+
+  // Optional permission to receive marketing updates
+  marketingConsent Boolean @default(false)
+
+  notes String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([weeklyClassId, classDate, status])
+  @@index([guestEmail])
+  @@index([bookingReference])
 }

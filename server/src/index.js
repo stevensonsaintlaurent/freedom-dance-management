@@ -9,6 +9,7 @@ import { errorMiddleware } from "./middleware/errorMiddleware.js";
 import userRoutes from "./routes/userRoutes.js";
 import classRoutes from "./routes/classRoutes.js";
 import staffRoutes from "./routes/staffRoutes.js";
+import weeklyClassRoutes from "./routes/weeklyClassRoutes.js";
 
 const app = express();
 
@@ -52,6 +53,7 @@ app.use("/api/auth", authRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/classes", classRoutes);
+app.use("/api/weekly-classes", weeklyClassRoutes);
 app.use("/api/staff", staffRoutes);
 
 // 404

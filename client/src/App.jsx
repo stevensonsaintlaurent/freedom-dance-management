@@ -21,6 +21,7 @@ import ProtectedRoute from "./components/ProtectedRoute";
 // ======================================================
 
 import Page from "./components/Page";
+import CreateWeeklyClass from "./components/weeklyClasses/CreateWeeklyClass";
 
 // ======================================================
 // PUBLIC PAGES
@@ -29,6 +30,7 @@ import Page from "./components/Page";
 import Login from "./pages/public/Login";
 import Register from "./pages/public/Register";
 import ForgotPassword from "./pages/public/ForgotPassword";
+import Schedule from "./pages/public/Schedule";
 
 // ======================================================
 // SHARED PAGES
@@ -42,15 +44,21 @@ import Profile from "./pages/shared/Profile";
 // ======================================================
 
 import DancerDashboard from "./pages/dancer/DancerDashboard";
+
 import StaffManagement from "./pages/manager/StaffManagement";
 import CreateDanceClass from "./pages/manager/CreateDanceClass";
 import ManageClasses from "./pages/manager/ManageClasses";
+import ManageWeeklyClasses from "./pages/manager/ManageWeeklyClasses";
 
 // ======================================================
 // PAGE CONTENT
 // ======================================================
 
 const pages = {
+  // ----------------------------------------------------
+  // PUBLIC PAGES
+  // ----------------------------------------------------
+
   landing: [
     "Welcome to Freedom Dance Studio",
     "Your place to learn, connect, and dance.",
@@ -61,6 +69,24 @@ const pages = {
     "Explore Dance Classes",
     "Find Salsa, Bachata, Kizomba, Konpa, and more.",
     ["Browse Schedule", "Class Details", "Reserve a Spot"],
+  ],
+
+  independent: [
+    "Independent Instructor Classes",
+    "Discover classes hosted by independent instructors at Freedom Dance Studio.",
+    ["Explore Instructors", "Class Schedule", "Contact Information"],
+  ],
+
+  schedule: [
+    "Class Schedule & Booking",
+    "Explore our weekly dance classes and choose the class you'd like to attend.",
+    ["Weekly Schedule", "Choose a Class", "Reserve Your Spot"],
+  ],
+
+  rental: [
+    "Rent Freedom Dance Studio",
+    "A flexible space for dance classes, rehearsals, workshops, and private events.",
+    ["Studio Information", "Rental Rates", "Request a Reservation"],
   ],
 
   events: [
@@ -74,6 +100,10 @@ const pages = {
     "Guest and member checkout will be connected to Stripe.",
     ["Select Booking", "Review Order", "Secure Payment"],
   ],
+
+  // ----------------------------------------------------
+  // SHARED DASHBOARD PAGES
+  // ----------------------------------------------------
 
   dashboard: [
     "Your Dashboard",
@@ -93,6 +123,10 @@ const pages = {
     ["Current Plan", "Benefits", "Renewal"],
   ],
 
+  // ----------------------------------------------------
+  // INSTRUCTOR PAGES
+  // ----------------------------------------------------
+
   instructorClasses: [
     "My Classes",
     "See your assigned classes and student rosters.",
@@ -104,6 +138,10 @@ const pages = {
     "Track class check-ins and participation.",
     ["Class Roster", "Check In", "Attendance History"],
   ],
+
+  // ----------------------------------------------------
+  // MANAGER PAGES
+  // ----------------------------------------------------
 
   manager: [
     "Manager Overview",
@@ -123,11 +161,19 @@ const pages = {
     ["Upcoming Events", "Ticket Sales", "Create Event"],
   ],
 
+  // ----------------------------------------------------
+  // ADMIN PAGES
+  // ----------------------------------------------------
+
   admin: [
     "Admin Overview",
     "Manage the entire platform.",
     ["Staff Permissions", "System Activity", "Studio Settings"],
   ],
+
+  // ----------------------------------------------------
+  // ERROR PAGE
+  // ----------------------------------------------------
 
   notFound: [
     "404 — Page Not Found",
@@ -155,7 +201,20 @@ function ScrollToTop() {
 // ======================================================
 
 function StaticPage({ name, links = [] }) {
-  const [title, description, items] = pages[name];
+  const page = pages[name];
+
+  if (!page) {
+    return (
+      <Page
+        title="Page Not Found"
+        description="The requested page could not be loaded."
+        items={[]}
+        links={[["Back to Home", "/"]]}
+      />
+    );
+  }
+
+  const [title, description, items] = page;
 
   return (
     <Page title={title} description={description} items={items} links={links} />
@@ -169,7 +228,9 @@ function StaticPage({ name, links = [] }) {
 function RoleDashboard() {
   const { user } = useAuth();
 
-  if (user?.role === "dancer") {
+  const role = String(user?.role || "").toLowerCase();
+
+  if (role === "dancer") {
     return <DancerDashboard />;
   }
 
@@ -179,7 +240,7 @@ function RoleDashboard() {
     admin: "admin",
   };
 
-  const pageName = dashboardByRole[user?.role] || "dashboard";
+  const pageName = dashboardByRole[role] || "dashboard";
 
   return <StaticPage name={pageName} />;
 }
@@ -208,13 +269,15 @@ function AppRoutes() {
                 name="landing"
                 links={[
                   ["Explore Classes", "/classes"],
+                  ["View Schedule", "/schedule"],
                   ["Upcoming Events", "/events"],
                 ]}
               />
             }
           />
+          <Route path="/schedule" element={<Schedule />} />
 
-          {/* CLASSES */}
+          {/* FREEDOM CLASSES */}
 
           <Route
             path="/classes"
@@ -222,8 +285,54 @@ function AppRoutes() {
               <StaticPage
                 name="classes"
                 links={[
-                  ["Book a Class", "/checkout"],
+                  ["Book a Class", "/schedule"],
+                  ["Independent Classes", "/independent"],
                   ["View Events", "/events"],
+                ]}
+              />
+            }
+          />
+
+          {/* INDEPENDENT INSTRUCTORS */}
+
+          <Route
+            path="/independent"
+            element={
+              <StaticPage
+                name="independent"
+                links={[
+                  ["Freedom Classes", "/classes"],
+                  ["View Schedule", "/schedule"],
+                ]}
+              />
+            }
+          />
+
+          {/* PUBLIC CLASS SCHEDULE */}
+
+          <Route
+            path="/schedule"
+            element={
+              <StaticPage
+                name="schedule"
+                links={[
+                  ["Explore Classes", "/classes"],
+                  ["Studio Rental", "/rental"],
+                ]}
+              />
+            }
+          />
+
+          {/* STUDIO RENTAL */}
+
+          <Route
+            path="/rental"
+            element={
+              <StaticPage
+                name="rental"
+                links={[
+                  ["View Schedule", "/schedule"],
+                  ["Explore Classes", "/classes"],
                 ]}
               />
             }
@@ -236,7 +345,10 @@ function AppRoutes() {
             element={
               <StaticPage
                 name="events"
-                links={[["Book an Event", "/checkout"]]}
+                links={[
+                  ["View Schedule", "/schedule"],
+                  ["Book an Event", "/checkout"],
+                ]}
               />
             }
           />
@@ -327,10 +439,30 @@ function AppRoutes() {
               {/* STAFF MANAGEMENT */}
 
               <Route path="/manager/staff" element={<StaffManagement />} />
+
+              {/* MANAGE WEEKLY CLASSES */}
+
+              <Route
+                path="/manager/weekly-classes"
+                element={<ManageWeeklyClasses />}
+              />
+
+              {/* CREATE WEEKLY CLASS */}
+
+              <Route
+                path="/manager/weekly-classes/new"
+                element={<CreateWeeklyClass />}
+              />
+
+              {/* CREATE DANCE CLASS */}
+
               <Route
                 path="/manager/classes/new"
                 element={<CreateDanceClass />}
               />
+
+              {/* MANAGE DANCE CLASSES */}
+
               <Route path="/manager/classes" element={<ManageClasses />} />
 
               {/* MANAGE BOOKINGS */}

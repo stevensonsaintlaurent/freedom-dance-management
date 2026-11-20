@@ -68,7 +68,9 @@ export const createClassService = async (classData) => {
   const instructor = await prisma.user.findFirst({
     where: {
       id: classData.instructorId,
-      role: "INSTRUCTOR",
+      role: {
+        in: ["INSTRUCTOR", "MANAGER", "ADMIN"],
+      },
       isActive: true,
     },
     select: {

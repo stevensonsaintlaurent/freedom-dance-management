@@ -10,6 +10,13 @@ const connectionString = process.env.DATABASE_URL;
 if (!connectionString) {
   throw new Error("DATABASE_URL is missing");
 }
+const databaseUrl = new URL(connectionString);
+
+console.log("DATABASE CONNECTION:", {
+  host: databaseUrl.hostname,
+  database: databaseUrl.pathname.slice(1),
+  username: databaseUrl.username,
+});
 
 const pool = new Pool({
   connectionString,

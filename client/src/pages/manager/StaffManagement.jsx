@@ -7,9 +7,21 @@ import {
   CheckCircle2,
   Loader2,
   RefreshCw,
+  UserPlus,
+  X,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 
 import api from "../../api/axios";
+
+const initialInstructorForm = {
+  firstName: "",
+  lastName: "",
+  email: "",
+  phone: "",
+  password: "",
+};
 
 export default function StaffManagement() {
   const [users, setUsers] = useState([]);
@@ -19,6 +31,13 @@ export default function StaffManagement() {
   const [search, setSearch] = useState("");
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+
+  // Add instructor state
+  const [showInstructorForm, setShowInstructorForm] = useState(false);
+  const [instructorForm, setInstructorForm] = useState(initialInstructorForm);
+  const [creatingInstructor, setCreatingInstructor] = useState(false);
+  const [formError, setFormError] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
 
   // ==========================================
   // FETCH REGISTERED USERS
@@ -31,7 +50,7 @@ export default function StaffManagement() {
 
       const response = await api.get("/staff/users");
 
-      setUsers(response.data.users);
+      setUsers(response.data.users || []);
     } catch (err) {
       setError(
         err.response?.data?.message || "Failed to load registered users.",
@@ -46,12 +65,125 @@ export default function StaffManagement() {
   }, []);
 
   // ==========================================
+  // INSTRUCTOR FORM
+  // ==========================================
+
+  const openInstructorForm = () => {
+    setInstructorForm({ ...initialInstructorForm });
+    setFormError("");
+    setShowPassword(false);
+    setShowInstructorForm(true);
+  };
+
+  const closeInstructorForm = () => {
+    if (creatingInstructor) return;
+
+    setShowInstructorForm(false);
+    setFormError("");
+    setInstructorForm({ ...initialInstructorForm });
+    setShowPassword(false);
+  };
+
+  const handleInstructorChange = (event) => {
+    const { name, value } = event.target;
+
+    setInstructorForm((previous) => ({
+      ...previous,
+      [name]: value,
+    }));
+  };
+
+  const handleCreateInstructor = async (event) => {
+    event.preventDefault();
+
+    if (creatingInstructor) return;
+
+    setFormError("");
+    setError("");
+    setSuccess("");
+
+    const data = {
+      firstName: instructorForm.firstName.trim(),
+      lastName: instructorForm.lastName.trim(),
+      email: instructorForm.email.trim().toLowerCase(),
+      phone: instructorForm.phone.trim(),
+      password: instructorForm.password,
+    };
+
+    if (data.firstName.length < 2) {
+      setFormError("First name must have at least 2 characters.");
+      return;
+    }
+
+    if (data.lastName.length < 2) {
+      setFormError("Last name must have at least 2 characters.");
+      return;
+    }
+
+    if (!data.email) {
+      setFormError("Please enter an email address.");
+      return;
+    }
+
+    if (data.password.length < 8) {
+      setFormError("Password must contain at least 8 characters.");
+      return;
+    }
+
+    try {
+      setCreatingInstructor(true);
+
+      const response = await api.post("/staff/instructors", data);
+
+      const newInstructor = response.data.instructor;
+
+      if (newInstructor) {
+        setUsers((previous) => [
+          newInstructor,
+          ...previous.filter((user) => user.id !== newInstructor.id),
+        ]);
+      }
+
+      setSuccess(
+        `${data.firstName} ${data.lastName} has been added as an instructor successfully.`,
+      );
+
+      setSearch("");
+      setShowInstructorForm(false);
+      setInstructorForm({ ...initialInstructorForm });
+      setShowPassword(false);
+
+      // Refresh from database
+      try {
+        const refreshed = await api.get("/staff/users");
+        setUsers(refreshed.data.users || []);
+      } catch {
+        // Keep the newly created instructor in local state.
+      }
+    } catch (err) {
+      console.error("Create instructor error:", err);
+
+      const status = err.response?.status;
+      const serverMessage = err.response?.data?.message;
+
+      setFormError(
+        serverMessage ||
+          (status
+            ? `Failed to create instructor. HTTP ${status}`
+            : `Network error: ${err.message}`),
+      );
+    } finally {
+      setCreatingInstructor(false);
+    }
+  };
+
+  // ==========================================
   // APPROVE INSTRUCTOR
   // ==========================================
 
   const handleApproveInstructor = async (user) => {
     const confirmed = window.confirm(
-      `Are you sure you want to approve ${user.firstName} ${user.lastName} as an instructor?`,
+      `Approve ${user.firstName} ${user.lastName} as an instructor?`,
     );
 
     if (!confirmed) return;
@@ -65,8 +197,8 @@ export default function StaffManagement() {
         role: "INSTRUCTOR",
       });
 
-      setUsers((previousUsers) =>
-        previousUsers.map((currentUser) =>
+      setUsers((previous) =>
+        previous.map((currentUser) =>
           currentUser.id === user.id
             ? { ...currentUser, ...response.data.user }
             : currentUser,
@@ -82,6 +214,10 @@ export default function StaffManagement() {
       setUpdatingUserId(null);
     }
   };
+
+  // ==========================================
+  // REMOVE INSTRUCTOR PERMISSIONS
+  // ==========================================
 
   const handleRemoveInstructor = async (user) => {
     const confirmed = window.confirm(
@@ -99,8 +235,8 @@ export default function StaffManagement() {
         role: "MEMBER",
       });
 
-      setUsers((previousUsers) =>
-        previousUsers.map((currentUser) =>
+      setUsers((previous) =>
+        previous.map((currentUser) =>
           currentUser.id === user.id
             ? { ...currentUser, ...response.data.user }
             : currentUser,
@@ -140,7 +276,6 @@ export default function StaffManagement() {
     const fullName = `${user.firstName} ${user.lastName}`.toLowerCase();
 
     const email = user.email.toLowerCase();
-
     const searchValue = search.toLowerCase().trim();
 
     return (
@@ -171,22 +306,6 @@ export default function StaffManagement() {
   };
 
   // ==========================================
-  // LOADING
-  // ==========================================
-
-  if (loading && users.length === 0) {
-    return (
-      <div className="flex min-h-[50vh] items-center justify-center">
-        <div className="flex flex-col items-center gap-4">
-          <Loader2 className="h-10 w-10 animate-spin text-amber-400" />
-
-          <p className="text-sm text-zinc-400">Loading staff management...</p>
-        </div>
-      </div>
-    );
-  }
-
-  // ==========================================
   // PAGE
   // ==========================================
 
@@ -201,20 +320,31 @@ export default function StaffManagement() {
           </h1>
 
           <p className="mt-2 text-sm text-zinc-400">
-            Manage registered users and approve instructors at Freedom Dance
-            Studio.
+            Manage users, create instructor accounts, and assign instructor
+            permissions at Freedom Dance Studio.
           </p>
         </div>
 
-        <button
-          type="button"
-          onClick={fetchUsers}
-          disabled={loading}
-          className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/10 bg-zinc-900 px-4 py-3 text-sm font-medium text-white transition hover:bg-zinc-800 disabled:opacity-50"
-        >
-          <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
-          Refresh
-        </button>
+        <div className="flex flex-wrap gap-3">
+          <button
+            type="button"
+            onClick={fetchUsers}
+            disabled={loading}
+            className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/10 bg-zinc-900 px-4 py-3 text-sm font-medium transition hover:bg-zinc-800 disabled:opacity-50"
+          >
+            <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
+            Refresh
+          </button>
+
+          <button
+            type="button"
+            onClick={openInstructorForm}
+            className="inline-flex items-center justify-center gap-2 rounded-xl bg-amber-500 px-5 py-3 text-sm font-bold text-zinc-950 transition hover:bg-amber-400"
+          >
+            <UserPlus className="h-4 w-4" />
+            Add Instructor
+          </button>
+        </div>
       </div>
 
       {/* MESSAGES */}
@@ -233,8 +363,7 @@ export default function StaffManagement() {
           role="status"
           className="flex items-center gap-2 rounded-xl border border-green-500/20 bg-green-500/10 p-4 text-sm text-green-400"
         >
-          <CheckCircle2 className="h-5 w-5" />
-
+          <CheckCircle2 className="h-5 w-5 shrink-0" />
           {success}
         </div>
       )}
@@ -267,8 +396,6 @@ export default function StaffManagement() {
       {/* USERS TABLE */}
 
       <div className="overflow-hidden rounded-2xl border border-white/10 bg-zinc-900/60">
-        {/* TABLE HEADER */}
-
         <div className="flex flex-col gap-4 border-b border-white/10 p-5 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h2 className="text-lg font-semibold">Registered Users</h2>
@@ -277,8 +404,6 @@ export default function StaffManagement() {
               {filteredUsers.length} users found
             </p>
           </div>
-
-          {/* SEARCH */}
 
           <div className="relative w-full sm:max-w-xs">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-500" />
@@ -292,8 +417,6 @@ export default function StaffManagement() {
             />
           </div>
         </div>
-
-        {/* TABLE */}
 
         <div className="overflow-x-auto">
           <table className="w-full min-w-[760px] text-left text-sm">
@@ -310,8 +433,6 @@ export default function StaffManagement() {
             <tbody className="divide-y divide-white/5">
               {filteredUsers.map((user) => (
                 <tr key={user.id} className="transition hover:bg-white/[0.03]">
-                  {/* USER */}
-
                   <td className="px-5 py-4">
                     <div className="flex items-center gap-3">
                       <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-amber-500/10 font-bold text-amber-400">
@@ -329,8 +450,6 @@ export default function StaffManagement() {
                     </div>
                   </td>
 
-                  {/* ROLE */}
-
                   <td className="px-5 py-4">
                     <span
                       className={`inline-flex rounded-full border px-3 py-1 text-xs font-semibold ${getRoleStyle(
@@ -340,8 +459,6 @@ export default function StaffManagement() {
                       {user.role}
                     </span>
                   </td>
-
-                  {/* STATUS */}
 
                   <td className="px-5 py-4">
                     <span
@@ -354,22 +471,15 @@ export default function StaffManagement() {
                           user.isActive ? "bg-green-400" : "bg-red-400"
                         }`}
                       />
-
                       {user.isActive ? "Active" : "Inactive"}
                     </span>
                   </td>
-
-                  {/* REGISTRATION DATE */}
 
                   <td className="px-5 py-4 text-zinc-400">
                     {user.createdAt
                       ? new Date(user.createdAt).toLocaleDateString()
                       : "—"}
                   </td>
-
-                  {/* ACTIONS */}
-
-                  {/* ACTIONS */}
 
                   <td className="px-5 py-4 text-right">
                     {user.role === "MEMBER" && user.isActive ? (
@@ -403,16 +513,243 @@ export default function StaffManagement() {
             </tbody>
           </table>
 
-          {filteredUsers.length === 0 && (
+          {loading && users.length === 0 && (
+            <div className="flex items-center justify-center gap-3 p-12 text-sm text-zinc-400">
+              <Loader2 className="h-5 w-5 animate-spin text-amber-400" />
+              Loading staff...
+            </div>
+          )}
+
+          {!loading && filteredUsers.length === 0 && (
             <div className="p-12 text-center">
               <Users className="mx-auto mb-3 h-10 w-10 text-zinc-600" />
-
               <p className="text-sm text-zinc-400">No users found.</p>
             </div>
           )}
         </div>
       </div>
+
+      {/* ADD INSTRUCTOR MODAL */}
+
+      {showInstructorForm && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 backdrop-blur-sm"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) {
+              closeInstructorForm();
+            }
+          }}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="add-instructor-title"
+            className="w-full max-w-xl overflow-hidden rounded-2xl border border-white/10 bg-zinc-900 shadow-2xl"
+          >
+            <div className="flex items-start justify-between border-b border-white/10 p-6">
+              <div>
+                <h2 id="add-instructor-title" className="text-xl font-bold">
+                  Add New Instructor
+                </h2>
+
+                <p className="mt-2 text-sm text-zinc-400">
+                  Create an instructor account for Freedom Dance Studio.
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={closeInstructorForm}
+                disabled={creatingInstructor}
+                aria-label="Close form"
+                className="rounded-lg p-2 text-zinc-400 transition hover:bg-white/10 hover:text-white disabled:opacity-50"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <form
+              onSubmit={handleCreateInstructor}
+              className="max-h-[75vh] space-y-5 overflow-y-auto p-6"
+            >
+              {formError && (
+                <div
+                  role="alert"
+                  className="rounded-xl border border-red-500/20 bg-red-500/10 p-3 text-sm text-red-400"
+                >
+                  {formError}
+                </div>
+              )}
+
+              <div className="grid gap-4 sm:grid-cols-2">
+                <FormField
+                  label="First Name"
+                  name="firstName"
+                  value={instructorForm.firstName}
+                  onChange={handleInstructorChange}
+                  placeholder="First name"
+                  minLength={2}
+                  required
+                />
+
+                <FormField
+                  label="Last Name"
+                  name="lastName"
+                  value={instructorForm.lastName}
+                  onChange={handleInstructorChange}
+                  placeholder="Last name"
+                  minLength={2}
+                  required
+                />
+              </div>
+
+              <FormField
+                label="Email Address"
+                name="email"
+                type="email"
+                value={instructorForm.email}
+                onChange={handleInstructorChange}
+                placeholder="instructor@example.com"
+                required
+              />
+
+              <FormField
+                label="Phone Number (Optional)"
+                name="phone"
+                type="tel"
+                value={instructorForm.phone}
+                onChange={handleInstructorChange}
+                placeholder="Phone number"
+              />
+
+              <div>
+                <label
+                  htmlFor="instructor-password"
+                  className="mb-2 block text-sm font-medium text-zinc-300"
+                >
+                  Initial Password
+                </label>
+
+                <div className="relative">
+                  <input
+                    id="instructor-password"
+                    type={showPassword ? "text" : "password"}
+                    name="password"
+                    value={instructorForm.password}
+                    onChange={handleInstructorChange}
+                    minLength={8}
+                    maxLength={128}
+                    autoComplete="new-password"
+                    required
+                    placeholder="At least 8 characters"
+                    className="w-full rounded-xl border border-white/10 bg-zinc-950 px-4 py-3 pr-12 text-sm text-white outline-none transition placeholder:text-zinc-500 focus:border-amber-400/50"
+                  />
+
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((previous) => !previous)}
+                    aria-label={
+                      showPassword ? "Hide password" : "Show password"
+                    }
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-white"
+                  >
+                    {showPassword ? (
+                      <EyeOff className="h-5 w-5" />
+                    ) : (
+                      <Eye className="h-5 w-5" />
+                    )}
+                  </button>
+                </div>
+
+                <p className="mt-2 text-xs text-zinc-500">
+                  Use a unique, strong initial password. A password setup or
+                  reset flow is recommended before production use.
+                </p>
+              </div>
+
+              <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-4">
+                <p className="text-sm font-semibold text-amber-400">
+                  Account Role: INSTRUCTOR
+                </p>
+
+                <p className="mt-1 text-xs leading-relaxed text-zinc-400">
+                  This account will be active immediately and can be selected
+                  when assigning weekly classes.
+                </p>
+              </div>
+
+              <div className="flex flex-col-reverse gap-3 pt-2 sm:flex-row sm:justify-end">
+                <button
+                  type="button"
+                  onClick={closeInstructorForm}
+                  disabled={creatingInstructor}
+                  className="rounded-xl border border-white/10 px-5 py-3 text-sm font-semibold text-zinc-300 transition hover:bg-white/5 disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+
+                <button
+                  type="submit"
+                  disabled={creatingInstructor}
+                  className="inline-flex items-center justify-center gap-2 rounded-xl bg-amber-500 px-6 py-3 text-sm font-bold text-zinc-950 transition hover:bg-amber-400 disabled:opacity-50"
+                >
+                  {creatingInstructor ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Creating...
+                    </>
+                  ) : (
+                    <>
+                      <UserPlus className="h-4 w-4" />
+                      Create Instructor
+                    </>
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </section>
+  );
+}
+
+// ==========================================
+// REUSABLE FORM FIELD
+// ==========================================
+
+function FormField({
+  label,
+  name,
+  value,
+  onChange,
+  placeholder,
+  type = "text",
+  required = false,
+  minLength,
+}) {
+  return (
+    <div>
+      <label
+        htmlFor={`instructor-${name}`}
+        className="mb-2 block text-sm font-medium text-zinc-300"
+      >
+        {label}
+      </label>
+
+      <input
+        id={`instructor-${name}`}
+        type={type}
+        name={name}
+        value={value}
+        onChange={onChange}
+        placeholder={placeholder}
+        required={required}
+        minLength={minLength}
+        autoComplete="off"
+        className="w-full rounded-xl border border-white/10 bg-zinc-950 px-4 py-3 text-sm text-white outline-none transition placeholder:text-zinc-500 focus:border-amber-400/50"
+      />
+    </div>
   );
 }
 
