@@ -76,6 +76,7 @@ function styleOf(name) {
 function normalize(raw) {
   const detail = raw.danceClass || raw.class || {};
   const dayValue = raw.dayOfWeek ?? raw.day ?? raw.weekday ?? "";
+
   const day =
     typeof dayValue === "number"
       ? dayValue === 0
@@ -84,7 +85,10 @@ function normalize(raw) {
       : String(dayValue).trim();
   const startRaw = raw.startTime ?? raw.time ?? raw.start;
   const endRaw = raw.endTime ?? raw.end;
-  const start = minutes(startRaw);
+  const start =
+    raw.startTimeMinutes != null
+      ? Number(raw.startTimeMinutes)
+      : minutes(startRaw);
   const end = minutes(endRaw);
   let duration = Number(
     raw.durationMinutes ?? raw.durationInMinutes ?? detail.durationMinutes,
@@ -101,7 +105,19 @@ function normalize(raw) {
     "Dance Class";
   const instructor =
     raw.instructor || raw.teacher || detail.instructor || raw.instructorName;
-  const price = raw.price ?? raw.dropInPrice ?? detail.price;
+  const priceCents =
+    raw.priceCents != null
+      ? Number(raw.priceCents)
+      : raw.price != null
+        ? Math.round(Number(String(raw.price).replace("$", "")) * 100)
+        : raw.dropInPrice != null
+          ? Math.round(Number(String(raw.dropInPrice).replace("$", "")) * 100)
+          : null;
+
+  const price =
+    priceCents == null || !Number.isFinite(priceCents)
+      ? null
+      : priceCents / 100;
   return {
     id: String(raw.id),
     day,
@@ -123,6 +139,10 @@ function normalize(raw) {
     ).toLowerCase(),
     price: price == null || price === "" ? null : price,
     description: raw.description || detail.description || "",
+    dayOfWeek: String(day).toUpperCase(),
+    startTimeMinutes: start,
+    durationMinutes: duration,
+    priceCents,
   };
 }
 function unpack(payload) {
@@ -243,31 +263,40 @@ export default function Schedule() {
         : [...old, ...visible.filter((c) => !selectedIds.has(c.id))],
     );
   };
+
   const continueBooking = () => {
     if (!selected.length) return;
+
     const chosen = selected.map((c) => ({
       id: c.id,
       weeklyClassId: c.id,
-      day: c.day,
-      dance: c.title,
+
       title: c.title,
-      instructor: c.instructor,
+      dance: c.title,
+
+      day: c.day,
+      dayOfWeek: c.dayOfWeek,
+
+      startTimeMinutes: c.startTimeMinutes,
+      durationMinutes: c.durationMinutes,
+
       time: clock(c.start),
       endTime: clock(c.end),
-      durationMinutes: c.duration,
+
+      instructor: c.instructor,
       level: c.level,
-      price: c.price,
       type: c.type,
+
+      price: c.price,
+      priceCents: c.priceCents,
     }));
-    navigate("/checkout", {
+
+    navigate("/schedule/book", {
       state: {
         bookingType: "multiple-classes",
         selectedClasses: chosen,
         classes: chosen,
         classCount: chosen.length,
-        classSummary: chosen
-          .map((c) => `${c.day} ${c.time} – ${c.endTime}: ${c.dance}`)
-          .join("; "),
       },
     });
   };

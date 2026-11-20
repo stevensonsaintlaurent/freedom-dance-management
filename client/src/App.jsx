@@ -31,6 +31,8 @@ import Login from "./pages/public/Login";
 import Register from "./pages/public/Register";
 import ForgotPassword from "./pages/public/ForgotPassword";
 import Schedule from "./pages/public/Schedule";
+import BookClass from "./pages/public/BookClass";
+import BookingSuccess from "./pages/public/BookingSuccess";
 
 // ======================================================
 // SHARED PAGES
@@ -44,6 +46,7 @@ import Profile from "./pages/shared/Profile";
 // ======================================================
 
 import DancerDashboard from "./pages/dancer/DancerDashboard";
+import WeeklyBookings from "./pages/dashboard/WeeklyBookings";
 
 import StaffManagement from "./pages/manager/StaffManagement";
 import CreateDanceClass from "./pages/manager/CreateDanceClass";
@@ -276,6 +279,23 @@ function AppRoutes() {
             }
           />
           <Route path="/schedule" element={<Schedule />} />
+          <Route path="/schedule/book" element={<BookClass />} />
+          <Route path="/booking-success" element={<BookingSuccess />} />
+
+          <Route
+            path="/manager/bookings"
+            element={<WeeklyBookings role="MANAGER" />}
+          />
+
+          <Route
+            path="/instructor/bookings"
+            element={<WeeklyBookings role="INSTRUCTOR" />}
+          />
+
+          <Route
+            path="/admin/bookings"
+            element={<WeeklyBookings role="ADMIN" />}
+          />
 
           {/* FREEDOM CLASSES */}
 

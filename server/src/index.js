@@ -10,6 +10,7 @@ import userRoutes from "./routes/userRoutes.js";
 import classRoutes from "./routes/classRoutes.js";
 import staffRoutes from "./routes/staffRoutes.js";
 import weeklyClassRoutes from "./routes/weeklyClassRoutes.js";
+import weeklyBookingRoutes from "./routes/weeklyBookingRoutes.js";
 
 const app = express();
 
@@ -55,6 +56,9 @@ app.use("/api/users", userRoutes);
 app.use("/api/classes", classRoutes);
 app.use("/api/weekly-classes", weeklyClassRoutes);
 app.use("/api/staff", staffRoutes);
+app.use(express.json());
+
+app.use("/api/weekly-bookings", weeklyBookingRoutes);
 
 // 404
 app.use((req, res) => {
