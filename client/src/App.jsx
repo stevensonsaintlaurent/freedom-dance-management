@@ -47,6 +47,7 @@ import Profile from "./pages/shared/Profile";
 
 import DancerDashboard from "./pages/dancer/DancerDashboard";
 import WeeklyBookings from "./pages/dashboard/WeeklyBookings";
+import Attendance from "./pages/dashboard/Attendance";
 
 import StaffManagement from "./pages/manager/StaffManagement";
 import CreateDanceClass from "./pages/manager/CreateDanceClass";
@@ -233,7 +234,7 @@ function RoleDashboard() {
 
   const role = String(user?.role || "").toLowerCase();
 
-  if (role === "dancer") {
+  if (role === "dancer" || role === "member") {
     return <DancerDashboard />;
   }
 
@@ -282,21 +283,6 @@ function AppRoutes() {
           <Route path="/schedule/book" element={<BookClass />} />
           <Route path="/booking-success" element={<BookingSuccess />} />
 
-          <Route
-            path="/manager/bookings"
-            element={<WeeklyBookings role="MANAGER" />}
-          />
-
-          <Route
-            path="/instructor/bookings"
-            element={<WeeklyBookings role="INSTRUCTOR" />}
-          />
-
-          <Route
-            path="/admin/bookings"
-            element={<WeeklyBookings role="ADMIN" />}
-          />
-
           {/* FREEDOM CLASSES */}
 
           <Route
@@ -323,21 +309,6 @@ function AppRoutes() {
                 links={[
                   ["Freedom Classes", "/classes"],
                   ["View Schedule", "/schedule"],
-                ]}
-              />
-            }
-          />
-
-          {/* PUBLIC CLASS SCHEDULE */}
-
-          <Route
-            path="/schedule"
-            element={
-              <StaticPage
-                name="schedule"
-                links={[
-                  ["Explore Classes", "/classes"],
-                  ["Studio Rental", "/rental"],
                 ]}
               />
             }
@@ -423,7 +394,7 @@ function AppRoutes() {
                 DANCER ROUTES
             ======================================== */}
 
-            <Route element={<ProtectedRoute roles={["dancer"]} />}>
+            <Route element={<ProtectedRoute roles={["dancer", "member"]} />}>
               <Route
                 path="/dancer/bookings"
                 element={<StaticPage name="bookings" />}
@@ -445,9 +416,11 @@ function AppRoutes() {
                 element={<StaticPage name="instructorClasses" />}
               />
 
+              <Route path="/instructor/attendance" element={<Attendance />} />
+
               <Route
-                path="/instructor/attendance"
-                element={<StaticPage name="attendance" />}
+                path="/instructor/bookings"
+                element={<WeeklyBookings role="INSTRUCTOR" />}
               />
             </Route>
 
@@ -489,8 +462,10 @@ function AppRoutes() {
 
               <Route
                 path="/manager/bookings"
-                element={<StaticPage name="manageBookings" />}
+                element={<WeeklyBookings role="MANAGER" />}
               />
+
+              <Route path="/manager/attendance" element={<Attendance />} />
 
               {/* MANAGE EVENTS */}
 
@@ -508,6 +483,13 @@ function AppRoutes() {
               {/* ADMIN DASHBOARD */}
 
               <Route path="/admin" element={<StaticPage name="admin" />} />
+
+              <Route
+                path="/admin/bookings"
+                element={<WeeklyBookings role="ADMIN" />}
+              />
+
+              <Route path="/admin/attendance" element={<Attendance />} />
 
               {/* ADMIN STAFF MANAGEMENT */}
 

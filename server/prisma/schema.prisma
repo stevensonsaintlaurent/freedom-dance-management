@@ -174,19 +174,34 @@ model WeeklyClassBooking {
   weeklyClassId String
   weeklyClass   WeeklyClass @relation(fields: [weeklyClassId], references: [id], onDelete: Restrict)
 
-  // The actual calendar date the student will attend
+  // Actual calendar date of the class
   classDate DateTime @db.Date
 
+  // Booking status
   status WeeklyBookingStatus @default(PENDING)
 
-  // Payment is collected at the studio for now
+  // Payment
   priceCents Int
   paidAt     DateTime?
 
-  // Optional permission to receive marketing updates
+  // Marketing permission
   marketingConsent Boolean @default(false)
 
   notes String?
+
+  // =====================================
+  // CLASS ATTENDANCE MANAGEMENT
+  // =====================================
+
+  // Null means attendance has not been marked
+  attendanceStatus AttendanceStatus?
+
+  // Date and time attendance was recorded
+  attendanceMarkedAt DateTime?
+
+  // ID of the instructor, manager, or admin
+  // who recorded attendance
+  attendanceMarkedById String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -194,4 +209,11 @@ model WeeklyClassBooking {
   @@index([weeklyClassId, classDate, status])
   @@index([guestEmail])
   @@index([bookingReference])
+  @@index([attendanceStatus])
+}
+
+enum AttendanceStatus {
+  PRESENT
+  ABSENT
+  NO_SHOW
 }

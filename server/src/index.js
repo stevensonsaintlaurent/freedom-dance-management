@@ -57,6 +57,9 @@ app.use("/api/classes", classRoutes);
 app.use("/api/weekly-classes", weeklyClassRoutes);
 app.use("/api/staff", staffRoutes);
 app.use(express.json());
+import attendanceRoutes from "./routes/attendanceRoutes.js";
+
+app.use("/api/attendance", attendanceRoutes);
 
 app.use("/api/weekly-bookings", weeklyBookingRoutes);
 
