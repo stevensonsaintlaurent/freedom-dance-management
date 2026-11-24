@@ -42,6 +42,11 @@ model User {
   studioRestorations StudioCancellation[] @relation("StudioRestoredBy")
   classRestorations  ClassCancellation[]  @relation("ClassRestoredBy")
 
+  // Studio rental management
+  studioRentals   StudioRental[]  @relation("RentalCustomer")
+  approvedRentals StudioRental[]  @relation("RentalApprover")
+  rentalPayments  RentalPayment[] @relation("RentalPaymentRecorder")
+
   @@index([role])
 }
 
@@ -124,6 +129,10 @@ model DanceClass {
   instructorId String
   instructor   User   @relation("ClassInstructor", fields: [instructorId], references: [id])
 
+  // Room assignment
+  roomId String?
+  room   StudioRoom? @relation(fields: [roomId], references: [id], onDelete: Restrict)
+
   bookings Booking[]
 
   createdAt DateTime @default(now())
@@ -131,6 +140,7 @@ model DanceClass {
 
   @@index([instructorId])
   @@index([startsAt])
+  @@index([roomId, startsAt])
 }
 
 // ==========================================
@@ -180,10 +190,15 @@ model WeeklyClass {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  // Room assignment
+  roomId String?
+  room   StudioRoom? @relation(fields: [roomId], references: [id], onDelete: Restrict)
+
   bookings      WeeklyClassBooking[]
   cancellations ClassCancellation[]
 
   @@index([dayOfWeek, startTimeMinutes])
+  @@index([roomId, dayOfWeek, startTimeMinutes])
   @@index([instructorId])
 }
 
@@ -310,4 +325,234 @@ model ClassCancellation {
   @@unique([weeklyClassId, classDate])
   @@index([classDate, isActive])
   @@index([cancelledById])
+}
+
+enum RentalStatus {
+  PENDING
+  APPROVED
+  CONFIRMED
+  COMPLETED
+  CANCELLED
+  REJECTED
+}
+
+enum RentalPaymentType {
+  DEPOSIT
+  BALANCE
+  FULL_PAYMENT
+  REFUND
+}
+
+enum RentalPaymentMethod {
+  CASH
+  ZELLE
+  CARD
+  BANK_TRANSFER
+  OTHER
+}
+
+model StudioRoom {
+  id             String               @id @default(uuid())
+  name           String               @unique
+  description    String?
+  capacity       Int?
+  areaSquareFeet Int?
+  amenities      String[]             @default([])
+  photoUrls      String[]             @default([])
+  isActive       Boolean              @default(true)
+  createdAt      DateTime             @default(now())
+  updatedAt      DateTime             @updatedAt
+  weeklyClasses  WeeklyClass[]
+  danceClasses   DanceClass[]
+  rates          RentalRate[]
+  rentals        RentalRoom[]
+  blocks         RoomBlock[]
+  operatingHours RoomOperatingHours[]
+}
+
+model RentalCategory {
+  id          String         @id @default(uuid())
+  name        String         @unique
+  description String?
+  isActive    Boolean        @default(true)
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
+  rates       RentalRate[]
+  rentals     StudioRental[]
+}
+
+model RentalRate {
+  id                      String         @id @default(uuid())
+  roomId                  String
+  room                    StudioRoom     @relation(fields: [roomId], references: [id], onDelete: Restrict)
+  categoryId              String
+  category                RentalCategory @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  hourlyRateCents         Int
+  minimumMinutes          Int            @default(60)
+  billingIncrementMinutes Int            @default(60)
+  depositBasisPoints      Int            @default(5000)
+  depositRefundable       Boolean        @default(false)
+  isActive                Boolean        @default(true)
+  createdAt               DateTime       @default(now())
+  updatedAt               DateTime       @updatedAt
+
+  @@unique([roomId, categoryId])
+}
+
+model StudioRental {
+  id                   String          @id @default(uuid())
+  reference            String          @unique @default(uuid())
+  customerId           String?
+  customer             User?           @relation("RentalCustomer", fields: [customerId], references: [id], onDelete: SetNull)
+  contactName          String
+  contactEmail         String
+  contactPhone         String
+  categoryId           String
+  category             RentalCategory  @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  startsAt             DateTime        @db.Timestamptz(3)
+  endsAt               DateTime        @db.Timestamptz(3)
+  status               RentalStatus    @default(PENDING)
+  guestCount           Int?
+  notes                String?
+  totalCents           Int
+  cleaningFeeCents     Int             @default(0)
+  depositRequiredCents Int
+  depositRefundable    Boolean         @default(false)
+  agreementVersion     String?
+  agreementAcceptedAt  DateTime?
+  approvedById         String?
+  approvedBy           User?           @relation("RentalApprover", fields: [approvedById], references: [id], onDelete: Restrict)
+  approvedAt           DateTime?
+  cancelledAt          DateTime?
+  cancellationReason   String?
+  seriesId             String?
+  series               RentalSeries?   @relation(fields: [seriesId], references: [id], onDelete: Restrict)
+  rooms                RentalRoom[]
+  payments             RentalPayment[]
+  createdAt            DateTime        @default(now())
+  updatedAt            DateTime        @updatedAt
+
+  @@index([status, startsAt, endsAt])
+  @@index([customerId])
+  @@index([seriesId])
+}
+
+model RentalRoom {
+  rentalId        String
+  rental          StudioRental @relation(fields: [rentalId], references: [id], onDelete: Restrict)
+  roomId          String
+  room            StudioRoom   @relation(fields: [roomId], references: [id], onDelete: Restrict)
+  hourlyRateCents Int
+  billedMinutes   Int
+  subtotalCents   Int
+
+  @@id([rentalId, roomId])
+  @@index([roomId])
+}
+
+model RentalPayment {
+  id           String              @id @default(uuid())
+  rentalId     String
+  rental       StudioRental        @relation(fields: [rentalId], references: [id], onDelete: Restrict)
+  type         RentalPaymentType
+  method       RentalPaymentMethod
+  amountCents  Int
+  reference    String?
+  paidAt       DateTime            @default(now())
+  recordedById String?
+  recordedBy   User?               @relation("RentalPaymentRecorder", fields: [recordedById], references: [id], onDelete: Restrict)
+  createdAt    DateTime            @default(now())
+
+  @@index([rentalId, paidAt])
+}
+
+// Groups individual dated reservations into a recurring arrangement.
+model RentalSeries {
+  id        String         @id @default(uuid())
+  name      String
+  notes     String?
+  isActive  Boolean        @default(true)
+  rentals   StudioRental[]
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
+}
+
+model RoomBlock {
+  id        String     @id @default(uuid())
+  roomId    String
+  room      StudioRoom @relation(fields: [roomId], references: [id], onDelete: Restrict)
+  startsAt  DateTime   @db.Timestamptz(3)
+  endsAt    DateTime   @db.Timestamptz(3)
+  reason    String
+  isActive  Boolean    @default(true)
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  @@index([roomId, isActive, startsAt, endsAt])
+}
+
+model RoomOperatingHours {
+  id              String     @id @default(uuid())
+  roomId          String
+  room            StudioRoom @relation(fields: [roomId], references: [id], onDelete: Restrict)
+  dayOfWeek       DayOfWeek
+  opensAtMinutes  Int
+  closesAtMinutes Int
+
+  @@unique([roomId, dayOfWeek, opensAtMinutes])
+}
+
+// ==========================================
+// STUDIO RENTAL PRICING
+// ==========================================
+
+enum RentalPricingScope {
+  SINGLE_ROOM
+  ENTIRE_STUDIO
+  LARGE_GROUP
+}
+
+enum RentalDayType {
+  EVERY_DAY
+  WEEKDAY
+  WEEKEND
+}
+
+model RentalPricingRule {
+  id String @id @default(uuid())
+
+  name        String
+  description String?
+
+  scope   RentalPricingScope
+  dayType RentalDayType      @default(EVERY_DAY)
+
+  // Time configuration
+  startTimeMinutes Int @default(0)
+  endTimeMinutes   Int @default(1440)
+
+  // Pricing configuration
+  hourlyRateCents Int?
+  requiresQuote   Boolean @default(false)
+
+  // Additional fees
+  cleaningFeeCents Int @default(0)
+
+  // Rental policies
+  minimumMinutes          Int     @default(60)
+  billingIncrementMinutes Int     @default(60)
+  depositBasisPoints      Int     @default(5000)
+  depositRefundable       Boolean @default(false)
+
+  // Large group configuration
+  minimumGuestCount Int?
+
+  // Status
+  isActive Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([scope, dayType, startTimeMinutes, endTimeMinutes])
+  @@index([scope, dayType, isActive])
 }
