@@ -1,6 +1,5 @@
 import { createContext, useContext, useEffect, useState } from "react";
-
-import api from "../api/axios";
+import api from "@/api/axios";
 
 const AuthContext = createContext(null);
 
@@ -19,13 +18,16 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Check if the user is already logged in
+  // ==========================================
+  // CHECK AUTHENTICATION
+  // ==========================================
+
   useEffect(() => {
     const checkAuth = async () => {
       try {
-        const response = await api.get("/auth/me");
+        const { data } = await api.get("/auth/me");
 
-        setUser(normalizeUser(response.data.user));
+        setUser(normalizeUser(data.user));
       } catch (error) {
         setUser(null);
       } finally {
@@ -36,44 +38,60 @@ export function AuthProvider({ children }) {
     checkAuth();
   }, []);
 
-  // Login
+  // ==========================================
+  // LOGIN
+  // ==========================================
+
   const signIn = async (email, password) => {
-    const response = await api.post("/auth/login", {
+    const { data } = await api.post("/auth/login", {
       email,
       password,
     });
 
-    const loggedInUser = normalizeUser(response.data.user);
+    const loggedInUser = normalizeUser(data.user);
 
     setUser(loggedInUser);
 
     return loggedInUser;
   };
 
-  // Register
-  const register = async (userData) => {
-    const response = await api.post("/auth/register", userData);
+  // ==========================================
+  // REGISTER
+  // ==========================================
 
-    return response.data.user;
+  const register = async (userData) => {
+    const { data } = await api.post("/auth/register", userData);
+
+    return data.user;
   };
 
-  // Update Profile
-  const updateProfile = async (profileData) => {
-    const response = await api.patch("/users/me", profileData);
+  // ==========================================
+  // UPDATE PROFILE
+  // ==========================================
 
-    const updatedUser = normalizeUser(response.data.user);
+  const updateProfile = async (profileData) => {
+    const { data } = await api.patch("/users/me", profileData);
+
+    const updatedUser = normalizeUser(data.user);
 
     setUser(updatedUser);
 
     return updatedUser;
   };
 
-  // Logout
+  // ==========================================
+  // LOGOUT
+  // ==========================================
+
   const signOut = async () => {
     await api.post("/auth/logout");
 
     setUser(null);
   };
+
+  // ==========================================
+  // CONTEXT PROVIDER
+  // ==========================================
 
   return (
     <AuthContext.Provider

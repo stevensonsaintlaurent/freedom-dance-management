@@ -56,6 +56,21 @@ const cleanString = (value) => (typeof value === "string" ? value.trim() : "");
 
 const isValidEmail = (email) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 
+// Reject both studio-wide and individual session cancellations.
+const ensureSessionAvailable = async (tx, weeklyClassId, classDate) => {
+  const studio = await tx.studioCancellation.findUnique({
+    where: { classDate },
+    select: { isActive: true },
+  });
+  if (studio?.isActive) throw new Error("STUDIO_CANCELLED");
+
+  const individual = await tx.classCancellation.findUnique({
+    where: { weeklyClassId_classDate: { weeklyClassId, classDate } },
+    select: { isActive: true },
+  });
+  if (individual?.isActive) throw new Error("CLASS_CANCELLED");
+};
+
 const bookingInclude = {
   weeklyClass: {
     select: {
@@ -209,6 +224,12 @@ export const createWeeklyBooking = async (req, res) => {
             throw new Error("INVALID_CLASS_DAY");
           }
 
+          await ensureSessionAvailable(
+            tx,
+            weeklyClass.id,
+            selection.parsedDate,
+          );
+
           // Prevent overselling when concurrent bookings arrive.
           // The transaction uses Serializable isolation.
           const bookedCount = await tx.weeklyClassBooking.count({
@@ -286,6 +307,14 @@ export const createWeeklyBooking = async (req, res) => {
     console.error("Create weekly booking error:", error);
 
     const errors = {
+      STUDIO_CANCELLED: [
+        409,
+        "All classes are cancelled on the selected date.",
+      ],
+      CLASS_CANCELLED: [
+        409,
+        "One of the selected class sessions has been cancelled.",
+      ],
       CLASS_NOT_AVAILABLE: [404, "This class is no longer available."],
       INVALID_CLASS_DAY: [
         400,
@@ -425,6 +454,14 @@ export const updateWeeklyBookingStatus = async (req, res) => {
         throw new Error("CANNOT_REACTIVATE");
       }
 
+      if (status === "CONFIRMED") {
+        await ensureSessionAvailable(
+          tx,
+          existing.weeklyClassId,
+          existing.classDate,
+        );
+      }
+
       return tx.weeklyClassBooking.update({
         where: { id },
         data: { status },
@@ -438,6 +475,12 @@ export const updateWeeklyBookingStatus = async (req, res) => {
       booking,
     });
   } catch (error) {
+    if (["STUDIO_CANCELLED", "CLASS_CANCELLED"].includes(error.message)) {
+      return res.status(409).json({
+        message: "Cannot confirm a booking for a cancelled class session.",
+      });
+    }
+
     if (error.message === "BOOKING_NOT_FOUND") {
       return res.status(404).json({
         message: "Booking not found.",

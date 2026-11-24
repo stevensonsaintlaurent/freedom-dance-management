@@ -53,6 +53,7 @@ import StaffManagement from "./pages/manager/StaffManagement";
 import CreateDanceClass from "./pages/manager/CreateDanceClass";
 import ManageClasses from "./pages/manager/ManageClasses";
 import ManageWeeklyClasses from "./pages/manager/ManageWeeklyClasses";
+import ManageCancellations from "./pages/manager/ManageCancellations";
 
 // ======================================================
 // PAGE CONTENT
@@ -472,6 +473,16 @@ function AppRoutes() {
               <Route
                 path="/manager/events"
                 element={<StaticPage name="manageEvents" />}
+              />
+
+              <Route
+                path="/manager/cancellations"
+                element={<ManageCancellations />}
+              />
+
+              <Route
+                path="/admin/cancellations"
+                element={<ManageCancellations />}
               />
             </Route>
 

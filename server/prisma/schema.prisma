@@ -6,6 +6,10 @@ datasource db {
   provider = "postgresql"
 }
 
+// ==========================================
+// USER MANAGEMENT
+// ==========================================
+
 enum UserRole {
   MEMBER
   INSTRUCTOR
@@ -31,8 +35,19 @@ model User {
   weeklyClasses WeeklyClass[] @relation("WeeklyClassInstructor")
   bookings      Booking[]
 
+  // Cancellation management
+  studioCancellations StudioCancellation[] @relation("StudioCancelledBy")
+  classCancellations  ClassCancellation[]  @relation("ClassCancelledBy")
+
+  studioRestorations StudioCancellation[] @relation("StudioRestoredBy")
+  classRestorations  ClassCancellation[]  @relation("ClassRestoredBy")
+
   @@index([role])
 }
+
+// ==========================================
+// AUTHENTICATION AND SESSIONS
+// ==========================================
 
 model Session {
   id        String    @id @default(uuid())
@@ -50,6 +65,10 @@ model Session {
   @@index([expiresAt])
 }
 
+// ==========================================
+// CLASS ENUMS
+// ==========================================
+
 enum ClassLevel {
   BEGINNER
   INTERMEDIATE
@@ -62,23 +81,46 @@ enum BookingStatus {
   CANCELLED
 }
 
+enum DayOfWeek {
+  MONDAY
+  TUESDAY
+  WEDNESDAY
+  THURSDAY
+  FRIDAY
+  SATURDAY
+  SUNDAY
+}
+
+enum WeeklyBookingStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+}
+
+enum AttendanceStatus {
+  PRESENT
+  ABSENT
+  NO_SHOW
+}
+
+// ==========================================
+// INDIVIDUAL DANCE CLASSES
+// ==========================================
+
 model DanceClass {
   id          String     @id @default(uuid())
   title       String
   description String?
   level       ClassLevel @default(BEGINNER)
 
-  // Date and time for this class session
   startsAt DateTime
   endsAt   DateTime
 
-  // Class capacity and price in cents
   capacity   Int @default(20)
   priceCents Int @default(1500)
 
   isActive Boolean @default(true)
 
-  // Instructor relationship
   instructorId String
   instructor   User   @relation("ClassInstructor", fields: [instructorId], references: [id])
 
@@ -91,14 +133,16 @@ model DanceClass {
   @@index([startsAt])
 }
 
+// ==========================================
+// MEMBER BOOKINGS
+// ==========================================
+
 model Booking {
   id String @id @default(uuid())
 
-  // Dancer relationship
   userId String
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  // Class relationship
   danceClassId String
   danceClass   DanceClass @relation(fields: [danceClassId], references: [id])
 
@@ -107,20 +151,13 @@ model Booking {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  // Prevent duplicate reservations
   @@unique([userId, danceClassId])
   @@index([danceClassId, status])
 }
 
-enum DayOfWeek {
-  MONDAY
-  TUESDAY
-  WEDNESDAY
-  THURSDAY
-  FRIDAY
-  SATURDAY
-  SUNDAY
-}
+// ==========================================
+// RECURRING WEEKLY CLASSES
+// ==========================================
 
 model WeeklyClass {
   id          String     @id @default(uuid())
@@ -128,79 +165,63 @@ model WeeklyClass {
   description String?
   level       ClassLevel @default(BEGINNER)
 
-  // Recurring weekly schedule
   dayOfWeek        DayOfWeek
   startTimeMinutes Int
   durationMinutes  Int
 
-  // Capacity and regular drop-in price
   capacity   Int @default(20)
   priceCents Int @default(1500)
 
   isActive Boolean @default(true)
 
-  // Instructor
   instructorId String
   instructor   User   @relation("WeeklyClassInstructor", fields: [instructorId], references: [id])
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  bookings WeeklyClassBooking[]
+  bookings      WeeklyClassBooking[]
+  cancellations ClassCancellation[]
 
   @@index([dayOfWeek, startTimeMinutes])
   @@index([instructorId])
 }
 
-enum WeeklyBookingStatus {
-  PENDING
-  CONFIRMED
-  CANCELLED
-}
+// ==========================================
+// PUBLIC WEEKLY CLASS BOOKINGS
+// ==========================================
 
 model WeeklyClassBooking {
   id String @id @default(uuid())
 
-  // Shared reference for booking multiple classes together
   bookingReference String
 
-  // Guest information — no account required
+  // Guest information
   guestFirstName String
   guestLastName  String
   guestEmail     String
   guestPhone     String
 
-  // The recurring class being booked
+  // Weekly class relationship
   weeklyClassId String
   weeklyClass   WeeklyClass @relation(fields: [weeklyClassId], references: [id], onDelete: Restrict)
 
-  // Actual calendar date of the class
+  // Actual class date
   classDate DateTime @db.Date
 
-  // Booking status
   status WeeklyBookingStatus @default(PENDING)
 
   // Payment
   priceCents Int
   paidAt     DateTime?
 
-  // Marketing permission
   marketingConsent Boolean @default(false)
 
   notes String?
 
-  // =====================================
-  // CLASS ATTENDANCE MANAGEMENT
-  // =====================================
-
-  // Null means attendance has not been marked
-  attendanceStatus AttendanceStatus?
-
-  // Date and time attendance was recorded
-  attendanceMarkedAt DateTime?
-
-  // ID of the instructor, manager, or admin
-  // who recorded attendance
+  // Attendance management
+  attendanceStatus     AttendanceStatus?
+  attendanceMarkedAt   DateTime?
   attendanceMarkedById String?
 
   createdAt DateTime @default(now())
@@ -212,8 +233,81 @@ model WeeklyClassBooking {
   @@index([attendanceStatus])
 }
 
-enum AttendanceStatus {
-  PRESENT
-  ABSENT
-  NO_SHOW
+// ==========================================
+// STUDIO-WIDE CLASS CANCELLATIONS
+// ==========================================
+
+model StudioCancellation {
+  id String @id @default(uuid())
+
+  // Cancel all recurring classes on this date
+  classDate DateTime @unique @db.Date
+
+  reason String
+
+  // Optional message displayed to customers
+  publicMessage String?
+
+  // False means the cancellation was restored
+  isActive Boolean @default(true)
+
+  // Staff member responsible for cancellation
+  cancelledById String
+  cancelledBy   User   @relation("StudioCancelledBy", fields: [cancelledById], references: [id], onDelete: Restrict)
+
+  cancelledAt DateTime @default(now())
+
+  // Restoration information
+  restoredById String?
+  restoredBy   User?   @relation("StudioRestoredBy", fields: [restoredById], references: [id], onDelete: Restrict)
+
+  restoredAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([isActive, classDate])
+  @@index([cancelledById])
+}
+
+// ==========================================
+// INDIVIDUAL CLASS CANCELLATIONS
+// ==========================================
+
+model ClassCancellation {
+  id String @id @default(uuid())
+
+  // The recurring class being cancelled
+  weeklyClassId String
+  weeklyClass   WeeklyClass @relation(fields: [weeklyClassId], references: [id], onDelete: Restrict)
+
+  // Cancel only this specific occurrence
+  classDate DateTime @db.Date
+
+  reason String
+
+  // Optional message displayed to customers
+  publicMessage String?
+
+  isActive Boolean @default(true)
+
+  // Staff member responsible for cancellation
+  cancelledById String
+  cancelledBy   User   @relation("ClassCancelledBy", fields: [cancelledById], references: [id], onDelete: Restrict)
+
+  cancelledAt DateTime @default(now())
+
+  // Restoration information
+  restoredById String?
+  restoredBy   User?   @relation("ClassRestoredBy", fields: [restoredById], references: [id], onDelete: Restrict)
+
+  restoredAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Prevent duplicate cancellations
+  @@unique([weeklyClassId, classDate])
+  @@index([classDate, isActive])
+  @@index([cancelledById])
 }

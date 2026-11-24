@@ -11,6 +11,8 @@ import classRoutes from "./routes/classRoutes.js";
 import staffRoutes from "./routes/staffRoutes.js";
 import weeklyClassRoutes from "./routes/weeklyClassRoutes.js";
 import weeklyBookingRoutes from "./routes/weeklyBookingRoutes.js";
+import cancellationRoutes from "./routes/cancellationRoutes.js";
+import attendanceRoutes from "./routes/attendanceRoutes.js";
 
 const app = express();
 
@@ -57,7 +59,7 @@ app.use("/api/classes", classRoutes);
 app.use("/api/weekly-classes", weeklyClassRoutes);
 app.use("/api/staff", staffRoutes);
 app.use(express.json());
-import attendanceRoutes from "./routes/attendanceRoutes.js";
+app.use("/api/cancellations", cancellationRoutes);
 
 app.use("/api/attendance", attendanceRoutes);
 

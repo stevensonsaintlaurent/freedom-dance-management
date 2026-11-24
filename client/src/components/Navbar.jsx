@@ -43,14 +43,7 @@ export default function Navbar() {
 
   const isInstructor = role === "INSTRUCTOR";
 
-  const dashboardPath =
-    role === "ADMIN"
-      ? "/admin"
-      : role === "MANAGER"
-        ? "/manager"
-        : role === "INSTRUCTOR"
-          ? "/instructor"
-          : "/dashboard";
+  const dashboardPath = "/dashboard";
 
   // ==========================================
   // CLOSE MENUS ON NAVIGATION
@@ -131,10 +124,7 @@ export default function Navbar() {
       {
         id: "weekly-classes",
         label: "Weekly Classes",
-        to:
-          role === "ADMIN"
-            ? "/admin/weekly-classes"
-            : "/manager/weekly-classes",
+        to: "/manager/weekly-classes",
         icon: CalendarDays,
       },
       {
