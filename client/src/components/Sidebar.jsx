@@ -16,6 +16,9 @@ import {
   ArrowUpRight,
   Sparkles,
   ClipboardList,
+  DoorOpen,
+  Layers,
+  DollarSign,
 } from "lucide-react";
 
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -127,6 +130,21 @@ const manager = [
     label: "Manage Events",
     path: "/manager/events",
     icon: CalendarDays,
+  },
+  {
+    label: "Studio Rooms",
+    path: "/manager/rooms",
+    icon: DoorOpen,
+  },
+  {
+    label: "Rental Categories",
+    path: "/manager/rental-categories",
+    icon: Layers,
+  },
+  {
+    label: "Rental Pricing",
+    path: "/manager/rental-pricing",
+    icon: DollarSign,
   },
 ];
 

@@ -13,6 +13,9 @@ import weeklyClassRoutes from "./routes/weeklyClassRoutes.js";
 import weeklyBookingRoutes from "./routes/weeklyBookingRoutes.js";
 import cancellationRoutes from "./routes/cancellationRoutes.js";
 import attendanceRoutes from "./routes/attendanceRoutes.js";
+import roomRoutes from "./routes/roomRoutes.js";
+import rentalCategoryRoutes from "./routes/rentalCategoryRoutes.js";
+import rentalPricingRoutes from "./routes/rentalPricingRoutes.js";
 
 const app = express();
 
@@ -63,7 +66,14 @@ app.use("/api/cancellations", cancellationRoutes);
 
 app.use("/api/attendance", attendanceRoutes);
 
+app.use("/api/rooms", roomRoutes);
+
 app.use("/api/weekly-bookings", weeklyBookingRoutes);
+
+// Studio rental management
+app.use("/api/rooms", roomRoutes);
+app.use("/api/rental-categories", rentalCategoryRoutes);
+app.use("/api/rental-pricing", rentalPricingRoutes);
 
 // 404
 app.use((req, res) => {

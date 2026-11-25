@@ -33,6 +33,7 @@ import ForgotPassword from "./pages/public/ForgotPassword";
 import Schedule from "./pages/public/Schedule";
 import BookClass from "./pages/public/BookClass";
 import BookingSuccess from "./pages/public/BookingSuccess";
+import Rental from "./pages/public/Rental";
 
 // ======================================================
 // SHARED PAGES
@@ -54,6 +55,9 @@ import CreateDanceClass from "./pages/manager/CreateDanceClass";
 import ManageClasses from "./pages/manager/ManageClasses";
 import ManageWeeklyClasses from "./pages/manager/ManageWeeklyClasses";
 import ManageCancellations from "./pages/manager/ManageCancellations";
+import ManageRooms from "./pages/manager/ManageRooms";
+import ManageRentalCategories from "./pages/manager/ManageRentalCategories";
+import ManageRentalPricing from "./pages/manager/ManageRentalPricing";
 
 // ======================================================
 // PAGE CONTENT
@@ -314,21 +318,9 @@ function AppRoutes() {
               />
             }
           />
-
           {/* STUDIO RENTAL */}
 
-          <Route
-            path="/rental"
-            element={
-              <StaticPage
-                name="rental"
-                links={[
-                  ["View Schedule", "/schedule"],
-                  ["Explore Classes", "/classes"],
-                ]}
-              />
-            }
-          />
+          <Route path="/rental" element={<Rental />} />
 
           {/* EVENTS */}
 
@@ -467,6 +459,19 @@ function AppRoutes() {
               />
 
               <Route path="/manager/attendance" element={<Attendance />} />
+
+              {/* STUDIO RENTAL MANAGEMENT */}
+
+              <Route path="/manager/rooms" element={<ManageRooms />} />
+              <Route
+                path="/manager/rental-categories"
+                element={<ManageRentalCategories />}
+              />
+
+              <Route
+                path="/manager/rental-pricing"
+                element={<ManageRentalPricing />}
+              />
 
               {/* MANAGE EVENTS */}
 
