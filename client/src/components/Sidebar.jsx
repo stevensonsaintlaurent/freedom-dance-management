@@ -19,6 +19,7 @@ import {
   DoorOpen,
   Layers,
   DollarSign,
+  Clock,
 } from "lucide-react";
 
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -145,6 +146,16 @@ const manager = [
     label: "Rental Pricing",
     path: "/manager/rental-pricing",
     icon: DollarSign,
+  },
+  {
+    label: "Studio Availability",
+    path: "/manager/availability",
+    icon: CalendarDays,
+  },
+  {
+    label: "Operating Hours",
+    path: "/manager/operating-hours",
+    icon: Clock,
   },
 ];
 

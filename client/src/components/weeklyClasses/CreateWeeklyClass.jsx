@@ -3,7 +3,6 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import {
   ArrowLeft,
-  ArrowRight,
   CalendarDays,
   Clock3,
   DollarSign,
@@ -12,12 +11,17 @@ import {
   BookOpen,
   Sparkles,
   CheckCircle2,
-  Save,
   Repeat2,
   GraduationCap,
+  DoorOpen,
+  AlertTriangle,
 } from "lucide-react";
 
 import api from "../../api/axios";
+import { studioRooms } from "../../data/studioRooms";
+
+const roomName = (room) =>
+  studioRooms.find((item) => item.id === room.id)?.displayName || room.name;
 
 const days = [
   "MONDAY",
@@ -39,6 +43,7 @@ const initialForm = {
   capacity: 20,
   price: 15,
   instructorId: "",
+  roomId: "",
 };
 
 const formatDay = (day) => day.charAt(0) + day.slice(1).toLowerCase();
@@ -119,6 +124,39 @@ export default function CreateWeeklyClass() {
 
   const [form, setForm] = useState(initialForm);
   const [instructors, setInstructors] = useState([]);
+  const [rooms, setRooms] = useState([]);
+  const [loadingRooms, setLoadingRooms] = useState(true);
+  const [roomError, setRoomError] = useState("");
+  const [roomReload, setRoomReload] = useState(0);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    setLoadingRooms(true);
+    setRoomError("");
+    api
+      .get("/rooms", { signal: controller.signal })
+      .then(({ data }) => {
+        if (!data.success || !Array.isArray(data.rooms))
+          throw new Error("Invalid room response");
+        if (!controller.signal.aborted)
+          setRooms(data.rooms.filter((room) => room.isActive));
+      })
+      .catch((error) => {
+        if (!controller.signal.aborted)
+          setRoomError(
+            error.response?.data?.message || "Failed to load studio rooms.",
+          );
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setLoadingRooms(false);
+      });
+    return () => controller.abort();
+  }, [roomReload]);
+
+  const selectedRoom = rooms.find((room) => room.id === form.roomId);
+  const exceedsCapacity =
+    selectedRoom?.capacity != null &&
+    Number(form.capacity) > selectedRoom.capacity;
   const [loading, setLoading] = useState(false);
   const [loadingInstructors, setLoadingInstructors] = useState(true);
 
@@ -204,7 +242,15 @@ export default function CreateWeeklyClass() {
   const handleSubmit = async (event) => {
     event.preventDefault();
 
-    if (loading) return;
+    if (loading || loadingRooms || loadingInstructors || roomError) return;
+    if (!instructors.some((item) => item.id === form.instructorId)) {
+      toast.error("Select an eligible instructor.");
+      return;
+    }
+    if (!selectedRoom || exceedsCapacity) {
+      toast.error("Select an active room with sufficient configured capacity.");
+      return;
+    }
 
     const [hours, minutes] = form.startTime.split(":").map(Number);
 
@@ -218,27 +264,42 @@ export default function CreateWeeklyClass() {
       capacity: Number(form.capacity),
       priceCents: Math.round(Number(form.price) * 100),
       instructorId: form.instructorId,
+      roomId: selectedRoom.id,
     };
 
+    if (
+      !form.startTime ||
+      !Number.isInteger(payload.startTimeMinutes) ||
+      payload.startTimeMinutes < 0 ||
+      payload.startTimeMinutes + payload.durationMinutes > 1440
+    ) {
+      toast.error("Choose a valid time ending by midnight.");
+      return;
+    }
     try {
       setLoading(true);
 
-      console.log("Creating weekly class...", payload);
-
       const response = await api.post("/weekly-classes", payload);
 
-      console.log("CLASS CREATED:", response.data);
+      if (!response.data.success || !response.data.weeklyClass)
+        throw new Error(
+          "Unexpected response. Check the weekly schedule before retrying.",
+        );
 
       toast.success("Weekly class created successfully!");
 
-      console.log("REDIRECTING TO WEEKLY CLASSES...");
+      for (const warning of response.data.weeklyClass.warnings || []) {
+        toast.warn(warning, { autoClose: false });
+      }
 
       navigate("/manager/weekly-classes");
     } catch (error) {
       console.error("CREATE WEEKLY CLASS ERROR:", error);
 
       toast.error(
-        error.response?.data?.message || "Failed to create weekly class",
+        error.response?.data?.message ||
+          error.message ||
+          "Failed to create weekly class",
       );
     } finally {
       setLoading(false);
@@ -291,12 +352,7 @@ export default function CreateWeeklyClass() {
           </div>
         </div>
 
-        <form
-          onSubmit={(event) => {
-            console.log("FORM SUBMITTED!");
-            handleSubmit(event);
-          }}
-        >
+        <form onSubmit={handleSubmit}>
           <div className="grid items-start gap-7 lg:grid-cols-[minmax(0,1fr)_340px]">
             {/* LEFT COLUMN */}
             <div className="space-y-7">
@@ -510,6 +566,70 @@ export default function CreateWeeklyClass() {
                 )}
               </section>
 
+              {/* STUDIO ROOM */}
+              <section className="rounded-2xl border border-white/10 bg-zinc-900/70 p-6 shadow-sm md:p-8">
+                <SectionHeading
+                  icon={DoorOpen}
+                  title="Studio Room Assignment"
+                  description="Reserve a room for this recurring class."
+                />
+                <Field label="Studio Room" required>
+                  <select
+                    name="roomId"
+                    value={form.roomId}
+                    onChange={handleChange}
+                    required
+                    disabled={loading || loadingRooms || Boolean(roomError)}
+                    className={inputClass}
+                  >
+                    <option value="">
+                      {loadingRooms
+                        ? "Loading rooms..."
+                        : "Choose a studio room"}
+                    </option>
+                    {rooms.map((room) => (
+                      <option key={room.id} value={room.id}>
+                        {roomName(room)}
+                      </option>
+                    ))}
+                  </select>
+                </Field>
+                {roomError && (
+                  <div role="alert" className="mt-3 text-sm text-red-400">
+                    {roomError}{" "}
+                    <button
+                      type="button"
+                      onClick={() => setRoomReload((n) => n + 1)}
+                      className="underline"
+                    >
+                      Retry
+                    </button>
+                  </div>
+                )}
+                {!loadingRooms && !roomError && !rooms.length && (
+                  <p className="mt-3 text-sm text-amber-400">
+                    No active studio rooms available.
+                  </p>
+                )}
+                {selectedRoom && (
+                  <p className="mt-3 text-sm text-zinc-400">
+                    {selectedRoom.capacity == null
+                      ? "Room capacity is not configured in the database. Verify approved occupancy before setting class capacity."
+                      : `Configured room capacity: ${selectedRoom.capacity}`}
+                  </p>
+                )}
+                {exceedsCapacity && (
+                  <p role="alert" className="mt-3 text-sm text-red-400">
+                    Class capacity exceeds the selected room capacity.
+                  </p>
+                )}
+                <div className="mt-4 flex gap-2 text-xs text-amber-400">
+                  <AlertTriangle size={16} className="shrink-0" /> The server
+                  checks scheduling conflicts when you save. Classes outside
+                  regular operating hours require management review.
+                </div>
+              </section>
+
               {/* CAPACITY & PRICING */}
               <section className="rounded-2xl border border-white/10 bg-zinc-900/70 p-6 shadow-sm md:p-8">
                 <SectionHeading
@@ -577,7 +697,15 @@ export default function CreateWeeklyClass() {
 
                 <button
                   type="submit"
-                  disabled={loading || loadingInstructors}
+                  disabled={
+                    loading ||
+                    loadingInstructors ||
+                    loadingRooms ||
+                    Boolean(roomError) ||
+                    !selectedRoom ||
+                    exceedsCapacity ||
+                    !instructors.length
+                  }
                   className="rounded-xl bg-amber-500 px-8 py-3 font-bold text-zinc-950 transition hover:bg-amber-400 disabled:opacity-50"
                 >
                   {loading ? "Creating Class..." : "Save & Create Class"}
@@ -629,6 +757,14 @@ export default function CreateWeeklyClass() {
                   />
 
                   <PreviewRow
+                    icon={DoorOpen}
+                    label="Studio Room"
+                    value={
+                      selectedRoom ? roomName(selectedRoom) : "Not selected"
+                    }
+                  />
+
+                  <PreviewRow
                     icon={Users}
                     label="Capacity"
                     value={`${form.capacity || 0} students`}
@@ -656,8 +792,8 @@ export default function CreateWeeklyClass() {
 
                 <p className="mt-3 text-xs leading-6 text-zinc-400">
                   Review the class name, instructor, schedule, duration,
-                  capacity, and price. After saving, you'll be redirected to
-                  your weekly schedule.
+                  capacity, room, and price. After saving, you'll be redirected
+                  to your weekly schedule.
                 </p>
               </div>
             </aside>

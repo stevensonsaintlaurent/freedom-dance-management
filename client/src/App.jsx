@@ -58,7 +58,8 @@ import ManageCancellations from "./pages/manager/ManageCancellations";
 import ManageRooms from "./pages/manager/ManageRooms";
 import ManageRentalCategories from "./pages/manager/ManageRentalCategories";
 import ManageRentalPricing from "./pages/manager/ManageRentalPricing";
-
+import ManageAvailability from "./pages/manager/ManageAvailability";
+import ManageOperatingHours from "./pages/manager/ManageOperatingHours";
 // ======================================================
 // PAGE CONTENT
 // ======================================================
@@ -471,6 +472,16 @@ function AppRoutes() {
               <Route
                 path="/manager/rental-pricing"
                 element={<ManageRentalPricing />}
+              />
+
+              <Route
+                path="/manager/availability"
+                element={<ManageAvailability />}
+              />
+
+              <Route
+                path="/manager/operating-hours"
+                element={<ManageOperatingHours />}
               />
 
               {/* MANAGE EVENTS */}

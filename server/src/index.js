@@ -16,6 +16,8 @@ import attendanceRoutes from "./routes/attendanceRoutes.js";
 import roomRoutes from "./routes/roomRoutes.js";
 import rentalCategoryRoutes from "./routes/rentalCategoryRoutes.js";
 import rentalPricingRoutes from "./routes/rentalPricingRoutes.js";
+import availabilityRoutes from "./routes/availabilityRoutes.js";
+import operatingHoursRoutes from "./routes/operatingHoursRoutes.js";
 
 const app = express();
 
@@ -74,6 +76,8 @@ app.use("/api/weekly-bookings", weeklyBookingRoutes);
 app.use("/api/rooms", roomRoutes);
 app.use("/api/rental-categories", rentalCategoryRoutes);
 app.use("/api/rental-pricing", rentalPricingRoutes);
+app.use("/api/availability", availabilityRoutes);
+app.use("/api/operating-hours", operatingHoursRoutes);
 
 // 404
 app.use((req, res) => {
