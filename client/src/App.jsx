@@ -26,7 +26,7 @@ import CreateWeeklyClass from "./components/weeklyClasses/CreateWeeklyClass";
 // ======================================================
 // PUBLIC PAGES
 // ======================================================
-
+import Landing from "./pages/public/Landing";
 import Login from "./pages/public/Login";
 import Register from "./pages/public/Register";
 import ForgotPassword from "./pages/public/ForgotPassword";
@@ -272,19 +272,7 @@ function AppRoutes() {
         <Route element={<PublicLayouts />}>
           {/* HOME */}
 
-          <Route
-            path="/"
-            element={
-              <StaticPage
-                name="landing"
-                links={[
-                  ["Explore Classes", "/classes"],
-                  ["View Schedule", "/schedule"],
-                  ["Upcoming Events", "/events"],
-                ]}
-              />
-            }
-          />
+          <Route path="/" element={<Landing />} />
           <Route path="/schedule" element={<Schedule />} />
           <Route path="/schedule/book" element={<BookClass />} />
           <Route path="/booking-success" element={<BookingSuccess />} />

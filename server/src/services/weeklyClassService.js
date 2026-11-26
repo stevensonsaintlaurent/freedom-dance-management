@@ -695,3 +695,26 @@ export const assignWeeklyClassRoomService = async (weeklyClassId, roomId) => {
     };
   });
 };
+// ======================================================
+// VALIDATE WEEKLY SCHEDULE IMPORT
+// ======================================================
+
+export const validateWeeklyScheduleImport = async (
+  tx,
+  data,
+  excludeClassId,
+) => {
+  await validateInstructor(tx, data.instructorId);
+
+  const room = await validateRoom(tx, data.roomId);
+
+  validateCapacity(room, data.capacity);
+
+  await checkWeeklyClassConflicts(tx, data, excludeClassId);
+
+  await checkDatedConflicts(tx, data, excludeClassId);
+
+  return {
+    warnings: getOperatingHoursWarnings(room, data),
+  };
+};

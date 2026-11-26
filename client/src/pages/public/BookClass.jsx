@@ -2,11 +2,12 @@ import { useMemo, useState } from "react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 import {
   ArrowLeft,
+  ArrowRight,
   CalendarDays,
-  CheckCircle2,
+  CalendarCheck,
   Loader2,
-  Mail,
-  Phone,
+  ShieldCheck,
+  CheckCircle2,
   UserRound,
 } from "lucide-react";
 
@@ -312,17 +313,34 @@ export default function BookClass() {
             <button
               type="submit"
               disabled={loading}
-              className="btn btn-warning w-full text-base font-bold"
+              aria-busy={loading}
+              className="
+    flex w-full min-h-[64px]
+    items-center justify-center gap-3
+    rounded-xl cursor-pointer
+    bg-gradient-to-r
+    from-[#D4AF37] to-[#F5D76E]
+    px-6 py-4
+    text-lg font-bold text-black
+    shadow-lg
+    transition-all duration-300
+    hover:brightness-110
+    hover:-translate-y-1
+    active:scale-[0.98]
+    disabled:opacity-50
+    disabled:cursor-not-allowed
+    disabled:transform-none
+  "
             >
               {loading ? (
                 <>
-                  <Loader2 className="animate-spin" size={18} />
-                  Submitting Booking...
+                  <Loader2 className="animate-spin" size={22} />
+                  Processing your booking...
                 </>
               ) : (
                 <>
-                  <CheckCircle2 size={18} />
-                  Submit Booking Request
+                  <CheckCircle2 size={22} />
+                  Reserve My Spot
                 </>
               )}
             </button>
