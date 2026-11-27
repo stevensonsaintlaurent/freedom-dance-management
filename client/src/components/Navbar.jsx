@@ -18,6 +18,7 @@ import {
 } from "lucide-react";
 
 import NavLinks from "./NavLinks";
+import NotificationBell from "./notifications/NotificationBell";
 import { useAuth } from "../auth/AuthContext";
 
 // ==========================================
@@ -228,6 +229,7 @@ export default function Navbar() {
             Book a Class
           </Link>
 
+          {user && <NotificationBell />}
           {user ? (
             <div className="group relative">
               <button
@@ -351,22 +353,29 @@ export default function Navbar() {
             MOBILE MENU BUTTON
         ====================================== */}
 
-        <button
-          type="button"
-          onClick={() => setMobileOpen((open) => !open)}
-          aria-label={
-            mobileOpen ? "Close navigation menu" : "Open navigation menu"
-          }
-          aria-expanded={mobileOpen}
-          className="
+        <div className="flex items-center gap-2 lg:hidden">
+          {user && <NotificationBell />}
+          <button
+            type="button"
+            onClick={() => setMobileOpen((open) => !open)}
+            aria-label={
+              mobileOpen ? "Close navigation menu" : "Open navigation menu"
+            }
+            aria-expanded={mobileOpen}
+            className="
             inline-flex size-10 items-center
             justify-center rounded-lg
             text-white transition-colors
             hover:bg-white/10 lg:hidden
           "
-        >
-          {mobileOpen ? <X className="size-6" /> : <Menu className="size-6" />}
-        </button>
+          >
+            {mobileOpen ? (
+              <X className="size-6" />
+            ) : (
+              <Menu className="size-6" />
+            )}
+          </button>
+        </div>
       </div>
 
       {/* ======================================

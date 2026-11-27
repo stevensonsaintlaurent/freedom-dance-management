@@ -59,10 +59,12 @@ const updateDelivery = async (delivery, data) => {
 // ==========================================
 
 const cancelDelivery = async (delivery, reason) => {
-  await updateDelivery(delivery, {
+  const saved = await updateDelivery(delivery, {
     status: "CANCELLED",
     lastError: reason,
   });
+
+  if (saved.count !== 1) return { status: "REVIEW_REQUIRED" };
 
   return {
     status: "CANCELLED",
@@ -84,6 +86,20 @@ const validateDelivery = async (delivery) => {
   const booking = delivery.weeklyBooking;
   const user = delivery.user;
 
+  if (!["STAFF", "STUDENT"].includes(delivery.payload?.audience)) {
+    return "Unknown notification audience.";
+  }
+  if (
+    ![
+      "BOOKING_RECEIVED",
+      "BOOKING_CONFIRMED",
+      "CLASS_REMINDER",
+      "BOOKING_CANCELLED",
+    ].includes(delivery.type)
+  ) {
+    return "Notification type not yet enabled for delivery.";
+  }
+
   if (delivery.payload?.audience === "STAFF") {
     if (!user || !user.isActive) {
       return "Staff account is no longer active.";
@@ -91,7 +107,8 @@ const validateDelivery = async (delivery) => {
 
     if (
       !["ADMIN", "MANAGER"].includes(user.role) &&
-      user.id !== booking?.weeklyClass?.instructorId
+      (user.role !== "INSTRUCTOR" ||
+        user.id !== booking?.weeklyClass?.instructorId)
     ) {
       return "Staff member is no longer assigned to this class.";
     }
@@ -278,6 +295,8 @@ export const processNotificationDelivery = async (id) => {
   }
 
   let providerAccepted = false;
+  let providerAttempted = false;
+  let acceptedResult;
 
   try {
     const invalidReason = await validateDelivery(delivery);
@@ -322,6 +341,7 @@ export const processNotificationDelivery = async (id) => {
       return { status: "SKIPPED" };
     }
 
+    providerAttempted = true;
     const result = await sendEmail({
       to: delivery.recipient,
       ...template,
@@ -329,12 +349,12 @@ export const processNotificationDelivery = async (id) => {
     });
 
     if (result.skipped) {
-      await updateDelivery(delivery, {
+      providerAttempted = false;
+      const saved = await updateDelivery(delivery, {
         status: "PENDING",
-        attemptCount: {
-          lt: prisma.notificationDelivery.fields.maxAttempts,
-        },
+        attemptCount: { decrement: 1 },
       });
+      if (saved.count !== 1) return { status: "REVIEW_REQUIRED" };
 
       return { status: "SKIPPED" };
     }
@@ -344,6 +364,7 @@ export const processNotificationDelivery = async (id) => {
     }
 
     providerAccepted = true;
+    acceptedResult = result;
 
     const saved = await updateDelivery(delivery, {
       status: "SENT",
@@ -363,20 +384,31 @@ export const processNotificationDelivery = async (id) => {
 
     return { status: "SENT" };
   } catch (error) {
-    // Do not automatically retry an email that
-    // the provider has already accepted.
-
-    if (providerAccepted) {
+    // Once the provider call begins, its outcome may be uncertain.
+    // Keep the record out of the retry queue until manually reconciled.
+    if (providerAttempted || providerAccepted) {
+      try {
+        await prisma.notificationDelivery.updateMany({
+          where: { id, status: "PROCESSING", lockToken },
+          data: {
+            provider: "RESEND",
+            ...(acceptedResult?.messageId
+              ? { providerMessageId: acceptedResult.messageId }
+              : {}),
+            lastError: `MANUAL_REVIEW: ${String(error.message || "Unknown provider outcome").slice(0, 950)}`,
+            lockedUntil: new Date(),
+          },
+        });
+      } catch (saveError) {
+        console.error("Unable to record reconciliation details:", delivery.id);
+      }
       console.error("Delivery requires reconciliation:", delivery.id);
-
-      return {
-        status: "REVIEW_REQUIRED",
-      };
+      return { status: "REVIEW_REQUIRED" };
     }
 
     const delay = RETRY_DELAY_MS * Math.pow(2, delivery.attemptCount - 1);
 
-    await updateDelivery(delivery, {
+    const saved = await updateDelivery(delivery, {
       status: "FAILED",
 
       lastError: String(error.message || "Unknown delivery error").slice(
@@ -387,6 +419,7 @@ export const processNotificationDelivery = async (id) => {
       nextAttemptAt: new Date(Date.now() + delay),
     });
 
+    if (saved.count !== 1) return { status: "REVIEW_REQUIRED" };
     return {
       status: "FAILED",
     };
@@ -400,6 +433,8 @@ export const processNotificationDelivery = async (id) => {
 export const processPendingNotifications = async ({
   recipient,
   limit = BATCH_SIZE,
+  createdAfter,
+  shouldContinue = () => true,
 } = {}) => {
   const channels = getEnabledChannels();
 
@@ -417,6 +452,15 @@ export const processPendingNotifications = async ({
   }
 
   const now = new Date();
+  if (
+    !recipient ||
+    !(createdAfter instanceof Date) ||
+    !Number.isFinite(createdAfter.getTime())
+  ) {
+    throw new Error(
+      "Batch processing requires a recipient and valid creation cutoff.",
+    );
+  }
 
   const deliveries = await prisma.notificationDelivery.findMany({
     where: {
@@ -436,7 +480,9 @@ export const processPendingNotifications = async ({
         lte: now,
       },
 
-      ...(recipient ? { recipient } : {}),
+      recipient,
+      createdAt: { gte: createdAfter },
+      attemptCount: { lt: prisma.notificationDelivery.fields.maxAttempts },
     },
 
     orderBy: {
@@ -447,6 +493,7 @@ export const processPendingNotifications = async ({
   });
 
   for (const delivery of deliveries) {
+    if (!shouldContinue()) break;
     if (delivery.attemptCount >= delivery.maxAttempts) {
       summary.skipped++;
       continue;

@@ -2,6 +2,8 @@ import { useEffect } from "react";
 import { Routes, Route, useLocation } from "react-router-dom";
 
 import { AuthProvider, useAuth } from "./auth/AuthContext";
+import { NotificationProvider } from "./context/NotificationContext";
+import Notifications from "./pages/shared/Notifications";
 
 // ======================================================
 // LAYOUTS
@@ -371,6 +373,7 @@ function AppRoutes() {
             {/* PROFILE */}
 
             <Route path="/profile" element={<Profile />} />
+            <Route path="/notifications" element={<Notifications />} />
 
             {/* ========================================
                 DANCER ROUTES
@@ -524,7 +527,9 @@ function AppRoutes() {
 export default function App() {
   return (
     <AuthProvider>
-      <AppRoutes />
+      <NotificationProvider>
+        <AppRoutes />
+      </NotificationProvider>
     </AuthProvider>
   );
 }
