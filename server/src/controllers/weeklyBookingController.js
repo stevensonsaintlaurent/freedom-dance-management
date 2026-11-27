@@ -1,5 +1,9 @@
 import { randomBytes } from "node:crypto";
 import prisma from "../lib/prisma.js";
+import {
+  createBookingNotifications,
+  cancelBookingReminders,
+} from "../services/notificationService.js";
 
 // Change the import above if your Prisma client
 // is stored in a different folder.
@@ -278,6 +282,7 @@ export const createWeeklyBooking = async (req, res) => {
             include: bookingInclude,
           });
 
+          await createBookingNotifications(tx, booking.id);
           createdBookings.push(booking);
         }
 
@@ -286,7 +291,7 @@ export const createWeeklyBooking = async (req, res) => {
       {
         isolationLevel: "Serializable",
         maxWait: 10000,
-        timeout: 20000,
+        timeout: 60000,
       },
     );
 
@@ -441,33 +446,57 @@ export const updateWeeklyBookingStatus = async (req, res) => {
       });
     }
 
-    const booking = await prisma.$transaction(async (tx) => {
-      const existing = await tx.weeklyClassBooking.findUnique({
-        where: { id },
-      });
+    const booking = await prisma.$transaction(
+      async (tx) => {
+        const existing = await tx.weeklyClassBooking.findUnique({
+          where: { id },
+        });
 
-      if (!existing) {
-        throw new Error("BOOKING_NOT_FOUND");
-      }
+        if (!existing) {
+          throw new Error("BOOKING_NOT_FOUND");
+        }
 
-      if (existing.status === "CANCELLED" && status === "CONFIRMED") {
-        throw new Error("CANNOT_REACTIVATE");
-      }
+        if (existing.status === "CANCELLED" && status === "CONFIRMED") {
+          throw new Error("CANNOT_REACTIVATE");
+        }
 
-      if (status === "CONFIRMED") {
-        await ensureSessionAvailable(
-          tx,
-          existing.weeklyClassId,
-          existing.classDate,
-        );
-      }
+        if (status === "CONFIRMED") {
+          await ensureSessionAvailable(
+            tx,
+            existing.weeklyClassId,
+            existing.classDate,
+          );
+        }
 
-      return tx.weeklyClassBooking.update({
-        where: { id },
-        data: { status },
-        include: bookingInclude,
-      });
-    });
+        if (existing.status === status) {
+          return tx.weeklyClassBooking.findUnique({
+            where: { id },
+            include: bookingInclude,
+          });
+        }
+
+        const updated = await tx.weeklyClassBooking.update({
+          where: { id },
+          data: { status },
+          include: bookingInclude,
+        });
+        if (status === "CONFIRMED") {
+          await createBookingNotifications(tx, updated.id);
+        } else {
+          await cancelBookingReminders(tx, updated.id);
+          await tx.notificationDelivery.updateMany({
+            where: {
+              weeklyBookingId: updated.id,
+              status: { in: ["PENDING", "FAILED"] },
+              type: { in: ["BOOKING_RECEIVED", "BOOKING_CONFIRMED"] },
+            },
+            data: { status: "CANCELLED" },
+          });
+        }
+        return updated;
+      },
+      { isolationLevel: "Serializable", maxWait: 10000, timeout: 60000 },
+    );
 
     return res.status(200).json({
       success: true,
@@ -492,6 +521,12 @@ export const updateWeeklyBookingStatus = async (req, res) => {
         message:
           "Cancelled bookings cannot be reactivated. Create a new booking.",
       });
+    }
+
+    if (error.code === "P2034") {
+      return res
+        .status(409)
+        .json({ message: "Booking changed. Please try again." });
     }
 
     console.error("Update booking status error:", error);

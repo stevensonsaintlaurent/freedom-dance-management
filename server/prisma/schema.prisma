@@ -47,6 +47,10 @@ model User {
   approvedRentals StudioRental[]  @relation("RentalApprover")
   rentalPayments  RentalPayment[] @relation("RentalPaymentRecorder")
 
+  notifications          Notification[]
+  notificationDeliveries NotificationDelivery[]
+  notificationPreference NotificationPreference?
+
   @@index([role])
 }
 
@@ -231,6 +235,14 @@ model WeeklyClassBooking {
   paidAt     DateTime?
 
   marketingConsent Boolean @default(false)
+
+  // Transactional SMS consent, independent of marketing consent
+  smsConsent        Boolean   @default(false)
+  smsConsentAt      DateTime?
+  smsConsentVersion String?
+
+  notifications          Notification[]
+  notificationDeliveries NotificationDelivery[]
 
   notes String?
 
@@ -555,4 +567,99 @@ model RentalPricingRule {
 
   @@unique([scope, dayType, startTimeMinutes, endTimeMinutes])
   @@index([scope, dayType, isActive])
+}
+
+// ==========================================
+// NOTIFICATIONS AND DELIVERY QUEUE
+// ==========================================
+
+enum NotificationType {
+  BOOKING_RECEIVED
+  BOOKING_CONFIRMED
+  BOOKING_CANCELLED
+  CLASS_CANCELLED
+  CLASS_RESTORED
+  CLASS_REMINDER
+  CLASS_RESCHEDULED
+}
+
+enum NotificationChannel {
+  EMAIL
+  SMS
+}
+
+enum NotificationDeliveryStatus {
+  PENDING
+  PROCESSING
+  SENT
+  DELIVERED
+  FAILED
+  CANCELLED
+}
+
+model Notification {
+  id              String              @id @default(uuid())
+  userId          String
+  user            User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  weeklyBookingId String?
+  weeklyBooking   WeeklyClassBooking? @relation(fields: [weeklyBookingId], references: [id], onDelete: Restrict)
+  type            NotificationType
+  title           String
+  message         String
+  data            Json?
+  dedupeKey       String              @unique
+  readAt          DateTime?           @db.Timestamptz(3)
+  createdAt       DateTime            @default(now()) @db.Timestamptz(3)
+
+  @@index([userId, readAt, createdAt])
+  @@index([weeklyBookingId])
+}
+
+model NotificationDelivery {
+  id                String                     @id @default(uuid())
+  userId            String?
+  user              User?                      @relation(fields: [userId], references: [id], onDelete: SetNull)
+  weeklyBookingId   String?
+  weeklyBooking     WeeklyClassBooking?        @relation(fields: [weeklyBookingId], references: [id], onDelete: Restrict)
+  type              NotificationType
+  channel           NotificationChannel
+  recipient         String
+  subject           String?
+  payload           Json
+  dedupeKey         String                     @unique
+  status            NotificationDeliveryStatus @default(PENDING)
+  scheduledAt       DateTime                   @default(now()) @db.Timestamptz(3)
+  nextAttemptAt     DateTime                   @default(now()) @db.Timestamptz(3)
+  expiresAt         DateTime?                  @db.Timestamptz(3)
+  attemptCount      Int                        @default(0)
+  maxAttempts       Int                        @default(5)
+  lockedUntil       DateTime?                  @db.Timestamptz(3)
+  lockToken         String?
+  provider          String?
+  providerMessageId String?
+  lastError         String?
+  sentAt            DateTime?                  @db.Timestamptz(3)
+  deliveredAt       DateTime?                  @db.Timestamptz(3)
+  createdAt         DateTime                   @default(now()) @db.Timestamptz(3)
+  updatedAt         DateTime                   @updatedAt @db.Timestamptz(3)
+
+  @@index([status, nextAttemptAt])
+  @@index([status, lockedUntil])
+  @@index([weeklyBookingId, status])
+  @@index([userId, createdAt])
+  @@index([provider, providerMessageId])
+}
+
+model NotificationPreference {
+  id                String    @id @default(uuid())
+  userId            String    @unique
+  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  dashboardEnabled  Boolean   @default(true)
+  emailEnabled      Boolean   @default(true)
+  smsEnabled        Boolean   @default(false)
+  smsConsentAt      DateTime?
+  smsConsentVersion String?
+  remindersEnabled  Boolean   @default(true)
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
 }
