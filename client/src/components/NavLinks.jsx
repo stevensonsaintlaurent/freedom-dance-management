@@ -10,6 +10,7 @@ import {
   ChevronDown,
   Users,
   CalendarCheck,
+  Camera,
 } from "lucide-react";
 
 // ==========================================
@@ -28,6 +29,12 @@ const mainLinks = [
     label: "Events",
     to: "/events",
     icon: PartyPopper,
+  },
+  {
+    id: "gallery",
+    label: "Gallery",
+    to: "/gallery",
+    icon: Camera,
   },
   {
     id: "rental",
@@ -93,8 +100,9 @@ export default function NavLinks({
              ? "bg-amber-500/15 text-amber-400"
              : "text-zinc-300 hover:bg-white/5 hover:text-white"
          }`
-      : `inline-flex items-center gap-2 rounded-lg px-3 py-2
-         text-sm font-medium transition-colors
+      : `inline-flex shrink-0 items-center gap-1.5
+         whitespace-nowrap rounded-lg px-2 py-2
+         text-sm font-medium transition-colors xl:px-3
          ${
            isActive
              ? "bg-amber-500/10 text-amber-400"
@@ -174,6 +182,7 @@ export default function NavLinks({
 
                   <span>
                     <span className="block">{link.label}</span>
+
                     <span className="block text-xs font-normal text-zinc-500">
                       {link.description}
                     </span>
@@ -212,7 +221,7 @@ export default function NavLinks({
   return (
     <nav
       aria-label="Main navigation"
-      className="hidden items-center gap-1 lg:flex"
+      className="hidden items-center gap-0.5 lg:flex xl:gap-1"
     >
       {mainLinks.map((link) => {
         const Icon = link.icon;
@@ -224,7 +233,7 @@ export default function NavLinks({
             end={link.to === "/"}
             className={linkStyles}
           >
-            <Icon className="size-4" />
+            <Icon className="hidden size-4 shrink-0 xl:block" />
             {link.label}
           </NavLink>
         );
@@ -232,19 +241,20 @@ export default function NavLinks({
 
       {/* CLASSES DROPDOWN */}
 
-      <div className="group relative">
+      <div className="group relative shrink-0">
         <button
           type="button"
           aria-haspopup="true"
-          className={`inline-flex items-center gap-2 rounded-lg
-            px-3 py-2 text-sm font-medium transition-colors
+          className={`inline-flex items-center gap-1.5
+            whitespace-nowrap rounded-lg px-2 py-2
+            text-sm font-medium transition-colors xl:px-3
             ${
               isClassesActive
                 ? "bg-amber-500/10 text-amber-400"
                 : "text-zinc-300 hover:bg-white/5 hover:text-white"
             }`}
         >
-          <Music2 className="size-4" />
+          <Music2 className="hidden size-4 xl:block" />
           Classes
           <ChevronDown className="size-4 transition-transform group-hover:rotate-180" />
         </button>
@@ -277,6 +287,7 @@ export default function NavLinks({
                     <span className="block text-sm font-semibold">
                       {link.label}
                     </span>
+
                     <span className="mt-1 block text-xs text-zinc-500">
                       {link.description}
                     </span>
@@ -288,8 +299,10 @@ export default function NavLinks({
         </div>
       </div>
 
+      {/* WEEKLY SCHEDULE */}
+
       <NavLink to="/schedule" className={linkStyles}>
-        <CalendarDays className="size-4" />
+        <CalendarDays className="hidden size-4 xl:block" />
         Schedule
       </NavLink>
     </nav>

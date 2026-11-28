@@ -51,6 +51,9 @@ model User {
   notificationDeliveries NotificationDelivery[]
   notificationPreference NotificationPreference?
 
+  createdEvents Event[]        @relation("EventCreator")
+  eventBookings EventBooking[] @relation("EventCustomer")
+
   @@index([role])
 }
 
@@ -380,6 +383,7 @@ model StudioRoom {
   rentals        RentalRoom[]
   blocks         RoomBlock[]
   operatingHours RoomOperatingHours[]
+  eventSessions  EventSession[]
 }
 
 model RentalCategory {
@@ -662,4 +666,215 @@ model NotificationPreference {
   remindersEnabled  Boolean   @default(true)
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
+}
+
+// ==========================================
+// EVENT MANAGEMENT
+// ==========================================
+
+enum EventType {
+  WEEKEND_INTENSIVE
+  DANCE_WORKSHOP
+  SOCIAL
+  MASTERCLASS
+  LIVE_CONCERT
+  FESTIVAL
+  SPECIAL_EVENT
+  OTHER
+}
+
+enum EventStatus {
+  DRAFT
+  PUBLISHED
+  CANCELLED
+  COMPLETED
+  ARCHIVED
+}
+
+enum EventSessionType {
+  WORKSHOP
+  MASTERCLASS
+  SOCIAL
+  PERFORMANCE
+  REHEARSAL
+  OTHER
+}
+
+enum EventBookingStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+}
+
+enum EventPaymentStatus {
+  UNPAID
+  PARTIALLY_PAID
+  PAID
+  REFUNDED
+}
+
+model Event {
+  id                   String            @id @default(uuid())
+  slug                 String            @unique
+  title                String
+  subtitle             String?
+  description          String?
+  category             String?
+  type                 EventType
+  status               EventStatus       @default(DRAFT)
+  instructorName       String?
+  level                String?
+  startDate            DateTime          @db.Date
+  endDate              DateTime          @db.Date
+  startsAt             DateTime?         @db.Timestamptz(3)
+  endsAt               DateTime?         @db.Timestamptz(3)
+  timezone             String            @default("America/Los_Angeles")
+  timeLabel            String?
+  durationLabel        String?
+  location             String?
+  address              String?
+  imageUrl             String?
+  imageFit             String            @default("contain")
+  highlight            String?
+  announcement         String?
+  buttonLabel          String            @default("Register Now")
+  featured             Boolean           @default(false)
+  showInHero           Boolean           @default(false)
+  rehearsalInfo        Json?
+  capacity             Int?
+  registrationEnabled  Boolean           @default(false)
+  registrationOpensAt  DateTime?         @db.Timestamptz(3)
+  registrationClosesAt DateTime?         @db.Timestamptz(3)
+  publishedAt          DateTime?         @db.Timestamptz(3)
+  cancelledAt          DateTime?         @db.Timestamptz(3)
+  cancellationReason   String?
+  createdById          String?
+  createdBy            User?             @relation("EventCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  sessions             EventSession[]
+  ticketTypes          EventTicketType[]
+  bookings             EventBooking[]
+  createdAt            DateTime          @default(now())
+  updatedAt            DateTime          @updatedAt
+
+  @@index([status, startDate])
+  @@index([featured, status])
+  @@index([showInHero, status])
+  @@index([type])
+  @@index([createdById])
+}
+
+model EventSession {
+  id             String               @id @default(uuid())
+  eventId        String
+  event          Event                @relation(fields: [eventId], references: [id], onDelete: Restrict)
+  title          String
+  description    String?
+  type           EventSessionType     @default(WORKSHOP)
+  instructorName String?
+  level          String?
+  sessionDate    DateTime             @db.Date
+  startsAt       DateTime?            @db.Timestamptz(3)
+  endsAt         DateTime?            @db.Timestamptz(3)
+  timeLabel      String?
+  durationLabel  String?
+  roomId         String?
+  room           StudioRoom?          @relation(fields: [roomId], references: [id], onDelete: Restrict)
+  location       String?
+  capacity       Int?
+  sortOrder      Int                  @default(0)
+  isActive       Boolean              @default(true)
+  tickets        EventTicketSession[]
+  createdAt      DateTime             @default(now())
+  updatedAt      DateTime             @updatedAt
+
+  @@unique([id, eventId])
+  @@index([eventId, sessionDate])
+  @@index([roomId, startsAt])
+}
+
+model EventTicketType {
+  id                  String               @id @default(uuid())
+  eventId             String
+  event               Event                @relation(fields: [eventId], references: [id], onDelete: Restrict)
+  name                String
+  description         String?
+  priceCents          Int
+  quantityAvailable   Int?
+  maxPerBooking       Int                  @default(10)
+  salesStartAt        DateTime?            @db.Timestamptz(3)
+  salesEndAt          DateTime?            @db.Timestamptz(3)
+  includesAllSessions Boolean              @default(false)
+  benefits            String[]             @default([])
+  sortOrder           Int                  @default(0)
+  isActive            Boolean              @default(true)
+  sessions            EventTicketSession[]
+  bookingItems        EventBookingItem[]
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+
+  @@unique([eventId, name])
+  @@unique([id, eventId])
+  @@index([eventId, isActive])
+  @@index([salesStartAt, salesEndAt])
+}
+
+model EventTicketSession {
+  eventId      String
+  ticketTypeId String
+  ticketType   EventTicketType @relation(fields: [ticketTypeId, eventId], references: [id, eventId], onDelete: Restrict)
+  sessionId    String
+  session      EventSession    @relation(fields: [sessionId, eventId], references: [id, eventId], onDelete: Restrict)
+
+  @@id([ticketTypeId, sessionId])
+  @@index([sessionId])
+}
+
+model EventBooking {
+  id                 String             @id @default(uuid())
+  bookingReference   String             @unique @default(uuid())
+  eventId            String
+  event              Event              @relation(fields: [eventId], references: [id], onDelete: Restrict)
+  userId             String?
+  user               User?              @relation("EventCustomer", fields: [userId], references: [id], onDelete: SetNull)
+  guestFirstName     String
+  guestLastName      String
+  guestEmail         String
+  guestPhone         String
+  status             EventBookingStatus @default(PENDING)
+  totalCents         Int
+  paymentStatus      EventPaymentStatus @default(UNPAID)
+  paidCents          Int                @default(0)
+  paidAt             DateTime?          @db.Timestamptz(3)
+  marketingConsent   Boolean            @default(false)
+  notes              String?
+  confirmedAt        DateTime?          @db.Timestamptz(3)
+  cancelledAt        DateTime?          @db.Timestamptz(3)
+  cancellationReason String?
+  items              EventBookingItem[]
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+
+  @@unique([id, eventId])
+  @@index([eventId, status])
+  @@index([userId])
+  @@index([guestEmail])
+  @@index([paymentStatus])
+}
+
+model EventBookingItem {
+  id             String          @id @default(uuid())
+  eventId        String
+  bookingId      String
+  booking        EventBooking    @relation(fields: [bookingId, eventId], references: [id, eventId], onDelete: Restrict)
+  ticketTypeId   String
+  ticketType     EventTicketType @relation(fields: [ticketTypeId, eventId], references: [id, eventId], onDelete: Restrict)
+  ticketName     String
+  quantity       Int
+  unitPriceCents Int
+  subtotalCents  Int
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+
+  @@unique([bookingId, ticketTypeId])
+  @@index([ticketTypeId])
 }

@@ -13,6 +13,9 @@ import {
   CheckCircle2,
   Globe,
 } from "lucide-react";
+import HomeGallery from "../../components/HomeGallery";
+import StudentTestimonials from "../../components/StudentTestimonials";
+import heroImage from "../../assets/recentClip1.jpeg";
 
 const danceStyles = [
   {
@@ -100,6 +103,8 @@ const Landing = () => {
               >
                 <CalendarDays size={20} />
                 Upcoming Events
+                <HomeGallery />
+                <StudentTestimonials />
               </Link>
             </div>
 
@@ -114,6 +119,14 @@ const Landing = () => {
           <div className="relative rounded-[2rem] border border-yellow-500/20 bg-zinc-900/80 p-8 shadow-2xl backdrop-blur sm:p-12">
             <div className="mb-8 flex h-20 w-20 items-center justify-center rounded-2xl bg-yellow-400/10 text-yellow-400">
               <Music2 size={40} />
+              <div className="mb-8 overflow-hidden rounded-2xl border border-yellow-400/20">
+                <img
+                  src={heroImage}
+                  alt="Freedom Dance Studio community"
+                  fetchPriority="high"
+                  className="h-64 w-full object-cover sm:h-80"
+                />
+              </div>
             </div>
 
             <p className="text-sm font-semibold uppercase tracking-[0.3em] text-yellow-400">

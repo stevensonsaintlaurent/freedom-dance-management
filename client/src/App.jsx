@@ -37,6 +37,7 @@ import Schedule from "./pages/public/Schedule";
 import BookClass from "./pages/public/BookClass";
 import BookingSuccess from "./pages/public/BookingSuccess";
 import Rental from "./pages/public/Rental";
+import Gallery from "./pages/public/Gallery";
 
 // ======================================================
 // SHARED PAGES
@@ -279,6 +280,7 @@ function AppRoutes() {
           <Route path="/schedule" element={<Schedule />} />
           <Route path="/schedule/book" element={<BookClass />} />
           <Route path="/booking-success" element={<BookingSuccess />} />
+          <Route path="/gallery" element={<Gallery />} />
 
           {/* FREEDOM CLASSES */}
 
