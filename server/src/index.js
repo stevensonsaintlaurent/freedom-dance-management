@@ -24,6 +24,7 @@ import availabilityRoutes from "./routes/availabilityRoutes.js";
 import operatingHoursRoutes from "./routes/operatingHoursRoutes.js";
 import notificationRoutes from "./routes/notificationRoutes.js";
 import notificationPreferenceRoutes from "./routes/notificationPreferenceRoutes.js";
+import eventRoutes from "./routes/eventRoutes.js";
 
 // ==========================================
 // MIDDLEWARE
@@ -109,7 +110,21 @@ app.use("/api/rental-categories", rentalCategoryRoutes);
 app.use("/api/rental-pricing", rentalPricingRoutes);
 app.use("/api/availability", availabilityRoutes);
 app.use("/api/operating-hours", operatingHoursRoutes);
+app.use("/api/events", eventRoutes);
 
+console.log("SERVER FILE:", import.meta.url);
+console.log("PROCESS ID:", process.pid);
+
+console.log("REGISTERED EVENT ROUTES:");
+
+console.table(
+  eventRoutes.stack
+    .filter((layer) => layer.route)
+    .map((layer) => ({
+      path: layer.route.path,
+      methods: Object.keys(layer.route.methods).join(", ").toUpperCase(),
+    })),
+);
 // ==========================================
 // NOTIFICATION MANAGEMENT
 // ==========================================

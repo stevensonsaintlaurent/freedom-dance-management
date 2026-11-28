@@ -64,6 +64,8 @@ import ManageRentalCategories from "./pages/manager/ManageRentalCategories";
 import ManageRentalPricing from "./pages/manager/ManageRentalPricing";
 import ManageAvailability from "./pages/manager/ManageAvailability";
 import ManageOperatingHours from "./pages/manager/ManageOperatingHours";
+import ManageEvents from "./pages/manager/ManageEvents";
+import CreateEvent from "./pages/manager/CreateEvent";
 // ======================================================
 // PAGE CONTENT
 // ======================================================
@@ -491,10 +493,11 @@ function AppRoutes() {
 
               {/* MANAGE EVENTS */}
 
-              <Route
-                path="/manager/events"
-                element={<StaticPage name="manageEvents" />}
-              />
+              <Route path="/manager/events" element={<ManageEvents />} />
+
+              {/* CREATE EVENT */}
+
+              <Route path="/manager/events/new" element={<CreateEvent />} />
 
               <Route
                 path="/manager/cancellations"
