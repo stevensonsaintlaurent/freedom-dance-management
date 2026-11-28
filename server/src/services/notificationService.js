@@ -1,9 +1,19 @@
+import "dotenv/config";
 import { localToUtc } from "../utils/rentalDateTime.js";
 
 const STUDIO_NAME = "Freedom Dance Studio";
+
 const STUDIO_ADDRESS = "3110 E Sunset Rd, Suite C, Las Vegas, NV 89120";
 
 const REMINDER_HOURS = [24, 2];
+
+// ==========================================
+// SMS CONFIGURATION
+// ==========================================
+
+const isSmsEnabled = () => {
+  return process.env.SMS_ENABLED === "true";
+};
 
 const formatTime = (minutes) => {
   const hours = Math.floor(minutes / 60);
@@ -154,6 +164,7 @@ const notifyStaff = async (tx, booking, weeklyClass, payload) => {
         },
         {
           id: weeklyClass.instructorId,
+          role: "INSTRUCTOR",
         },
       ],
     },
@@ -215,7 +226,12 @@ const notifyStaff = async (tx, booking, weeklyClass, payload) => {
     }
 
     // Staff SMS — explicit consent required
-    if (preferences?.smsEnabled && preferences?.smsConsentAt && user.phone) {
+    if (
+      isSmsEnabled() &&
+      preferences?.smsEnabled === true &&
+      preferences?.smsConsentAt &&
+      user.phone
+    ) {
       await queueDelivery(tx, {
         bookingId: booking.id,
         userId: user.id,
@@ -261,7 +277,12 @@ const notifyStudent = async (tx, booking, payload) => {
   });
 
   // SMS receipt
-  if (booking.smsConsent && booking.smsConsentAt) {
+  if (
+    isSmsEnabled() &&
+    booking.smsConsent === true &&
+    booking.smsConsentAt &&
+    booking.guestPhone
+  ) {
     await queueDelivery(tx, {
       bookingId: booking.id,
       type,
@@ -306,7 +327,12 @@ const scheduleReminders = async (tx, booking, startsAt, payload) => {
     });
 
     // SMS reminder
-    if (booking.smsConsent && booking.smsConsentAt) {
+    if (
+      isSmsEnabled() &&
+      booking.smsConsent === true &&
+      booking.smsConsentAt &&
+      booking.guestPhone
+    ) {
       await queueDelivery(tx, {
         bookingId: booking.id,
         type: "CLASS_REMINDER",

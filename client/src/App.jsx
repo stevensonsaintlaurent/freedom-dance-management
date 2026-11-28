@@ -4,6 +4,7 @@ import { Routes, Route, useLocation } from "react-router-dom";
 import { AuthProvider, useAuth } from "./auth/AuthContext";
 import { NotificationProvider } from "./context/NotificationContext";
 import Notifications from "./pages/shared/Notifications";
+import NotificationPreferences from "./pages/shared/NotificationPreferences";
 
 // ======================================================
 // LAYOUTS
@@ -374,6 +375,17 @@ function AppRoutes() {
 
             <Route path="/profile" element={<Profile />} />
             <Route path="/notifications" element={<Notifications />} />
+
+            <Route
+              element={
+                <ProtectedRoute roles={["manager", "instructor", "admin"]} />
+              }
+            >
+              <Route
+                path="/notification-preferences"
+                element={<NotificationPreferences />}
+              />
+            </Route>
 
             {/* ========================================
                 DANCER ROUTES

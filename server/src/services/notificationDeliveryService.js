@@ -341,6 +341,55 @@ export const processNotificationDelivery = async (id) => {
       return { status: "SKIPPED" };
     }
 
+    // Recheck the latest staff notification preferences
+    // immediately before contacting the email provider.
+
+    if (delivery.payload?.audience === "STAFF") {
+      const currentUser = await prisma.user.findUnique({
+        where: {
+          id: delivery.userId,
+        },
+        select: {
+          isActive: true,
+          email: true,
+          notificationPreference: {
+            select: {
+              emailEnabled: true,
+              remindersEnabled: true,
+            },
+          },
+        },
+      });
+
+      if (!currentUser || !currentUser.isActive) {
+        return await cancelDelivery(
+          delivery,
+          "Staff account is no longer active.",
+        );
+      }
+
+      if (currentUser.email !== delivery.recipient) {
+        return await cancelDelivery(
+          delivery,
+          "Staff email address has changed.",
+        );
+      }
+
+      if (currentUser.notificationPreference?.emailEnabled === false) {
+        return await cancelDelivery(
+          delivery,
+          "Email notifications are disabled.",
+        );
+      }
+
+      if (
+        delivery.type === "CLASS_REMINDER" &&
+        currentUser.notificationPreference?.remindersEnabled === false
+      ) {
+        return await cancelDelivery(delivery, "Class reminders are disabled.");
+      }
+    }
+
     providerAttempted = true;
     const result = await sendEmail({
       to: delivery.recipient,

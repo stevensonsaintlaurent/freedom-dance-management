@@ -20,6 +20,8 @@ import {
   Layers,
   DollarSign,
   Clock,
+  Bell,
+  Settings2,
 } from "lucide-react";
 
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -43,6 +45,18 @@ const common = [
   },
 ];
 
+const notificationLinks = [
+  {
+    label: "Notifications",
+    path: "/notifications",
+    icon: Bell,
+  },
+  {
+    label: "Notification Preferences",
+    path: "/notification-preferences",
+    icon: Settings2,
+  },
+];
 // ==========================================
 // DANCER NAVIGATION
 // ==========================================
@@ -292,6 +306,7 @@ export default function Sidebar({ onNavigate }) {
   const isInstructor = role === "instructor";
   const isManager = role === "manager";
   const isAdmin = role === "admin";
+  const canManageNotifications = isManager || isInstructor || isAdmin;
 
   const workspaceLinks = isDancer ? dancer : isInstructor ? instructor : [];
 
@@ -392,6 +407,14 @@ export default function Sidebar({ onNavigate }) {
           links={adminLinks}
           onNavigate={onNavigate}
         />
+
+        {canManageNotifications && (
+          <SidebarSection
+            title="Notifications & Settings"
+            links={notificationLinks}
+            onNavigate={onNavigate}
+          />
+        )}
       </div>
 
       {/* =====================================

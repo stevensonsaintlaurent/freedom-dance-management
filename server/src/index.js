@@ -23,6 +23,7 @@ import rentalPricingRoutes from "./routes/rentalPricingRoutes.js";
 import availabilityRoutes from "./routes/availabilityRoutes.js";
 import operatingHoursRoutes from "./routes/operatingHoursRoutes.js";
 import notificationRoutes from "./routes/notificationRoutes.js";
+import notificationPreferenceRoutes from "./routes/notificationPreferenceRoutes.js";
 
 // ==========================================
 // MIDDLEWARE
@@ -114,6 +115,7 @@ app.use("/api/operating-hours", operatingHoursRoutes);
 // ==========================================
 
 app.use("/api/notifications", notificationRoutes);
+app.use("/api/notification-preferences", notificationPreferenceRoutes);
 
 // ==========================================
 // ERROR HANDLING
